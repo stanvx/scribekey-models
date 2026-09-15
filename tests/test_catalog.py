@@ -4,7 +4,6 @@ from scribekey_models.catalog import (
     GENERATED_DIR,
     export_generated,
     generate_all_artifacts,
-    generate_bootstrap_catalog,
     validate,
 )
 from scribekey_models.cli import _parser
@@ -31,12 +30,7 @@ def test_expected_runtime_artifacts_are_generated() -> None:
         "model_catalog.json",
         "speaker_diarization_manifest.json",
         "cleanup_model_catalog.json",
-        "bootstrap_catalog.json",
     }
-
-
-def test_bootstrap_identifies_public_source() -> None:
-    assert generate_bootstrap_catalog()["generator"]["source"] == "scribekey-models"
 
 
 def test_committed_generated_files_are_current() -> None:

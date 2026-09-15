@@ -179,16 +179,6 @@ def generate_cleanup_catalog() -> dict[str, Any]:
     }
 
 
-def generate_bootstrap_catalog() -> dict[str, Any]:
-    return {
-        "schema_version": 1,
-        "generator": {"source": "scribekey-models", "format_version": "1.0.0"},
-        "speech": generate_speech_catalog(),
-        "diarization": generate_diarization_manifest(),
-        "cleanup": generate_cleanup_catalog(),
-    }
-
-
 def _render_json(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
@@ -201,7 +191,6 @@ def generate_all_artifacts() -> list[GenerationArtifact]:
             _render_json(generate_diarization_manifest()),
         ),
         GenerationArtifact("cleanup_model_catalog.json", _render_json(generate_cleanup_catalog())),
-        GenerationArtifact("bootstrap_catalog.json", _render_json(generate_bootstrap_catalog())),
     ]
 
 
@@ -236,15 +225,6 @@ def validate() -> list[ValidationIssue]:
                 issues.append(ValidationIssue(str(source), prefix + error.message))
         except (OSError, TypeError, ValueError, yaml.YAMLError, SchemaError) as exc:
             issues.append(ValidationIssue(str(source), str(exc)))
-
-    try:
-        validator = Draft202012Validator(_load_json(SCHEMA_DIR / "bootstrap.schema.json"))
-        for error in validator.iter_errors(generate_bootstrap_catalog()):
-            location = ".".join(str(part) for part in error.absolute_path)
-            prefix = f"{location}: " if location else ""
-            issues.append(ValidationIssue("generated/bootstrap_catalog.json", prefix + error.message))
-    except (OSError, TypeError, ValueError, yaml.YAMLError, SchemaError) as exc:
-        issues.append(ValidationIssue("generated/bootstrap_catalog.json", str(exc)))
 
     for message in export_generated(check=True):
         issues.append(ValidationIssue("generated", message))
