@@ -4,6 +4,7 @@ from scribekey_models.catalog import (
     GENERATED_DIR,
     export_generated,
     generate_all_artifacts,
+    generate_speech_catalog,
     validate,
 )
 from scribekey_models.cli import _parser
@@ -41,4 +42,24 @@ def test_generate_cli_accepts_consumer_output_directory(tmp_path: Path) -> None:
     args = _parser().parse_args(["generate", "--output-dir", str(tmp_path), "--check"])
     assert args.output_dir == tmp_path
     assert args.check is True
+
+
+def test_speech_refresh_keeps_legacy_ids_and_adds_new_runtime_shapes() -> None:
+    models = {model["id"]: model for model in generate_speech_catalog()["models"]}
+
+    assert models["moonshine-tiny"]["deprecated"] is True
+    assert models["moonshine-tiny"]["replacementId"] == "moonshine-v2-tiny-en"
+    assert models["moonshine-base"]["deprecated"] is True
+    assert models["moonshine-base"]["replacementId"] == "moonshine-v2-base-en"
+
+    assert models["moonshine-v2-tiny-en"]["sherpaConfig"]["type"] == "moonshine_v2"
+    assert models["moonshine-v2-base-en"]["sherpaConfig"]["type"] == "moonshine_v2"
+    assert models["omnilingual-asr-300m"]["sherpaConfig"]["type"] == "omnilingual_ctc"
+    assert models["qwen3-asr-0.6b"]["sherpaConfig"]["type"] == "qwen3_asr"
+
+    assert all(
+        "/resolve/main/" not in file["downloadUrl"]
+        for model in models.values()
+        for file in model["files"]
+    )
 

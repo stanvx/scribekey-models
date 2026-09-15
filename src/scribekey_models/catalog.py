@@ -76,6 +76,8 @@ def generate_speech_catalog() -> dict[str, Any]:
         )
         if model.get("retired"):
             entry["retired"] = True
+        if model.get("deprecated"):
+            entry["deprecated"] = True
         if model.get("replacementId"):
             entry["replacementId"] = model["replacementId"]
         if model.get("streamLanguage"):
