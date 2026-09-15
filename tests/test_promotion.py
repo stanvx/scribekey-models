@@ -238,9 +238,12 @@ def test_channel_catalog_paths_are_relative_to_channel_document() -> None:
 
     for chan_path in [stable_path, qa_path]:
         data = json.loads(chan_path.read_text(encoding="utf-8"))
+        release_id = data["releaseId"]
         for cat_info in data["catalogs"].values():
             rel_path = cat_info["path"]
-            assert rel_path.startswith("../releases/2026.09.1/"), f"Unexpected path format in {chan_path.name}: {rel_path}"
+            assert rel_path.startswith(f"../releases/{release_id}/"), (
+                f"Unexpected path format in {chan_path.name}: {rel_path}"
+            )
             # Resolve relative to channel directory
             target_file = (chan_path.parent / rel_path).resolve()
             assert target_file.is_file(), f"Target catalog not found at {target_file} from {chan_path.name}"
