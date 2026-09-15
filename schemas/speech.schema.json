@@ -40,7 +40,9 @@
               "MOONSHINE",
               "PARAKEET",
               "CANARY",
-              "DISTIL_WHISPER"
+              "DISTIL_WHISPER",
+              "QWEN3_ASR",
+              "OMNILINGUAL"
             ]
           },
           "displayName": {
@@ -59,6 +61,9 @@
             ]
           },
           "retired": {
+            "type": "boolean"
+          },
+          "deprecated": {
             "type": "boolean"
           },
           "replacementId": {
