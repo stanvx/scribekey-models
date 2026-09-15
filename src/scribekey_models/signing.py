@@ -9,27 +9,32 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_KEY_ID = "scribekey-release-2026"
+DEFAULT_ALGORITHM = "SHA256withECDSA"
+SUPPORTED_ALGORITHMS = {"SHA256withECDSA", "ecdsa-p256-sha256"}
 DEFAULT_PUBLIC_KEY_PATH = ROOT / "keys" / "release-signing.pub"
 
 
-def generate_keypair() -> tuple[ed25519.Ed25519PrivateKey, ed25519.Ed25519PublicKey]:
-    private_key = ed25519.Ed25519PrivateKey.generate()
+def generate_keypair() -> tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey]:
+    """Generate a P-256 (SECP256R1) ECDSA keypair."""
+    private_key = ec.generate_private_key(ec.SECP256R1())
     return private_key, private_key.public_key()
 
 
-def export_public_key_pem(public_key: ed25519.Ed25519PublicKey) -> str:
+def export_public_key_pem(public_key: ec.EllipticCurvePublicKey) -> str:
+    """Export public key as SubjectPublicKeyInfo PEM string."""
     return public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
 
 
-def export_private_key_pem(private_key: ed25519.Ed25519PrivateKey) -> str:
+def export_private_key_pem(private_key: ec.EllipticCurvePrivateKey) -> str:
+    """Export private key as unencrypted PKCS#8 PEM string."""
     return private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -37,7 +42,13 @@ def export_private_key_pem(private_key: ed25519.Ed25519PrivateKey) -> str:
     ).decode("ascii")
 
 
-def load_private_key(value: str | bytes | None = None, *, env_var: str | None = None, file_path: Path | None = None) -> ed25519.Ed25519PrivateKey:
+def load_private_key(
+    value: str | bytes | None = None,
+    *,
+    env_var: str | None = None,
+    file_path: Path | None = None,
+) -> ec.EllipticCurvePrivateKey:
+    """Load a P-256 ECDSA private key from PEM bytes, env var, or file."""
     raw: bytes | None = None
     if file_path is not None:
         raw = file_path.read_bytes()
@@ -56,34 +67,25 @@ def load_private_key(value: str | bytes | None = None, *, env_var: str | None = 
         else:
             raise ValueError("No private key provided and MODEL_RELEASE_SIGNING_KEY is not set")
 
-    # Try PEM format first
+    # Load PEM format (supports PKCS#8 'PRIVATE KEY' or SEC1 'EC PRIVATE KEY')
     if b"BEGIN" in raw and b"PRIVATE KEY" in raw:
         loaded = serialization.load_pem_private_key(raw, password=None)
-        if not isinstance(loaded, ed25519.Ed25519PrivateKey):
-            raise TypeError("Expected Ed25519 private key")
+        if not isinstance(loaded, ec.EllipticCurvePrivateKey):
+            raise TypeError(f"Expected EC private key, got {type(loaded).__name__}")
+        if not isinstance(loaded.curve, ec.SECP256R1):
+            raise TypeError(f"Expected SECP256R1 (P-256) curve, got {loaded.curve.name}")
         return loaded
 
-    # Try hex format (64 chars = 32 bytes)
-    stripped = raw.strip()
-    if len(stripped) == 64:
-        try:
-            return ed25519.Ed25519PrivateKey.from_private_bytes(bytes.fromhex(stripped.decode("ascii")))
-        except ValueError:
-            pass
-
-    # Try base64 format (44 chars = 32 bytes)
-    try:
-        decoded = base64.b64decode(stripped)
-        if len(decoded) == 32:
-            return ed25519.Ed25519PrivateKey.from_private_bytes(decoded)
-    except (ValueError, binascii.Error):
-        pass
-
-    raise ValueError("Unable to parse private key: expected PKCS#8 PEM, 64-character hex, or base64 32-byte seed")
+    raise ValueError("Unable to parse private key: expected PKCS#8 or SEC1 PEM format for P-256 EC key")
 
 
-def load_public_key(value: str | bytes | Path | ed25519.Ed25519PublicKey | None = None) -> ed25519.Ed25519PublicKey:
-    if isinstance(value, ed25519.Ed25519PublicKey):
+def load_public_key(
+    value: str | bytes | Path | ec.EllipticCurvePublicKey | None = None,
+) -> ec.EllipticCurvePublicKey:
+    """Load a P-256 ECDSA public key from SubjectPublicKeyInfo PEM or existing instance."""
+    if isinstance(value, ec.EllipticCurvePublicKey):
+        if not isinstance(value.curve, ec.SECP256R1):
+            raise TypeError(f"Expected SECP256R1 (P-256) curve, got {value.curve.name}")
         return value
 
     raw: bytes
@@ -98,46 +100,34 @@ def load_public_key(value: str | bytes | Path | ed25519.Ed25519PublicKey | None 
     else:
         raw = value
 
-    # Try PEM
+    # Load PEM format
     if b"BEGIN" in raw and b"PUBLIC KEY" in raw:
         loaded = serialization.load_pem_public_key(raw)
-        if not isinstance(loaded, ed25519.Ed25519PublicKey):
-            raise TypeError("Expected Ed25519 public key")
+        if not isinstance(loaded, ec.EllipticCurvePublicKey):
+            raise TypeError(f"Expected EC public key, got {type(loaded).__name__}")
+        if not isinstance(loaded.curve, ec.SECP256R1):
+            raise TypeError(f"Expected SECP256R1 (P-256) curve, got {loaded.curve.name}")
         return loaded
 
-    # Try hex format (64 chars = 32 bytes)
-    stripped = raw.strip()
-    if len(stripped) == 64:
-        try:
-            return ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(stripped.decode("ascii")))
-        except ValueError:
-            pass
-
-    # Try base64 format
-    try:
-        decoded = base64.b64decode(stripped)
-        if len(decoded) == 32:
-            return ed25519.Ed25519PublicKey.from_public_bytes(decoded)
-    except (ValueError, binascii.Error):
-        pass
-
-    raise ValueError("Unable to parse public key: expected SubjectPublicKeyInfo PEM, 64-character hex, or base64 32-byte key")
+    raise ValueError("Unable to parse public key: expected SubjectPublicKeyInfo PEM format for P-256 EC key")
 
 
 def create_signature_payload(
     target_path: Path,
-    private_key: ed25519.Ed25519PrivateKey,
+    private_key: ec.EllipticCurvePrivateKey,
     *,
     key_id: str = DEFAULT_KEY_ID,
+    algorithm: str = DEFAULT_ALGORITHM,
 ) -> dict[str, Any]:
+    """Create a detached signature payload over the EXACT bytes of target_path using P-256 / SHA256withECDSA."""
     content = target_path.read_bytes()
     target_sha256 = hashlib.sha256(content).hexdigest()
-    signature_bytes = private_key.sign(content)
+    signature_bytes = private_key.sign(content, ec.ECDSA(hashes.SHA256()))
     signature_b64 = base64.b64encode(signature_bytes).decode("ascii")
 
     return {
         "schemaVersion": 1,
-        "algorithm": "ed25519",
+        "algorithm": algorithm,
         "keyId": key_id,
         "targetFile": target_path.name,
         "targetSha256": target_sha256,
@@ -147,15 +137,22 @@ def create_signature_payload(
 
 def sign_file(
     target_path: Path,
-    private_key: ed25519.Ed25519PrivateKey,
+    private_key: ec.EllipticCurvePrivateKey,
     *,
     key_id: str = DEFAULT_KEY_ID,
+    algorithm: str = DEFAULT_ALGORITHM,
     sig_path: Path | None = None,
 ) -> Path:
+    """Sign target_path and write detached signature to sig_path (defaults to <target>.sig)."""
     if sig_path is None:
         sig_path = target_path.with_name(target_path.name + ".sig")
 
-    payload = create_signature_payload(target_path, private_key, key_id=key_id)
+    payload = create_signature_payload(
+        target_path,
+        private_key,
+        key_id=key_id,
+        algorithm=algorithm,
+    )
     sig_path.parent.mkdir(parents=True, exist_ok=True)
     sig_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return sig_path
@@ -164,8 +161,9 @@ def sign_file(
 def verify_file(
     target_path: Path,
     sig_path: Path | None = None,
-    public_key: ed25519.Ed25519PublicKey | Path | str | None = None,
+    public_key: ec.EllipticCurvePublicKey | Path | str | None = None,
 ) -> tuple[bool, str]:
+    """Verify a detached ECDSA signature over the EXACT bytes of target_path."""
     if not target_path.exists():
         return False, f"Target file not found: {target_path}"
 
@@ -180,8 +178,9 @@ def verify_file(
     except (json.JSONDecodeError, OSError) as exc:
         return False, f"Malformed signature file JSON: {exc}"
 
-    if payload.get("algorithm") != "ed25519":
-        return False, f"Unsupported signature algorithm: {payload.get('algorithm')}"
+    algorithm = payload.get("algorithm")
+    if algorithm not in SUPPORTED_ALGORITHMS:
+        return False, f"Unsupported signature algorithm: {algorithm}"
 
     if payload.get("schemaVersion") != 1:
         return False, f"Unsupported signature schema version: {payload.get('schemaVersion')}"
@@ -195,15 +194,16 @@ def verify_file(
             f"expected {payload.get('targetSha256')}, got {expected_sha256}"
         )
 
-    # Verify cryptographic signature
+    # Decode signature bytes
     try:
         sig_bytes = base64.b64decode(payload["signature"])
     except (binascii.Error, ValueError, KeyError) as exc:
         return False, f"Malformed base64 signature: {exc}"
 
+    # Verify cryptographic signature against exact bytes
     try:
         pub = load_public_key(public_key)
-        pub.verify(sig_bytes, content)
+        pub.verify(sig_bytes, content, ec.ECDSA(hashes.SHA256()))
     except InvalidSignature:
         return False, "Cryptographic signature verification failed: signature does not match target bytes"
     except (ValueError, TypeError, OSError) as exc:

@@ -1,0 +1,99 @@
+name: Prepare Release Promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Distribution channel to update"
+        required: true
+        type: choice
+        options:
+          - qa
+          - stable
+      release:
+        description: "Release ID to promote (e.g. 2026.09.1)"
+        required: true
+        type: string
+      sequence:
+        description: "Optional explicit monotonic sequence number (auto-increments if omitted)"
+        required: false
+        type: string
+      notes:
+        description: "Promotion notes / rationale"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-promotion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e '.[dev]'
+
+      - name: Fail-closed verification of signing key secret
+        env:
+          MODEL_RELEASE_SIGNING_KEY: ${{ secrets.MODEL_RELEASE_SIGNING_KEY }}
+        run: |
+          if [ -z "$MODEL_RELEASE_SIGNING_KEY" ]; then
+            echo "::error::MODEL_RELEASE_SIGNING_KEY secret is not configured in GitHub Secrets. Promotions must be cryptographically signed."
+            exit 1
+          fi
+
+      - name: Promote channel
+        env:
+          MODEL_RELEASE_SIGNING_KEY: ${{ secrets.MODEL_RELEASE_SIGNING_KEY }}
+        run: |
+          args=(
+            promote
+            --channel "${{ inputs.channel }}"
+            --release "${{ inputs.release }}"
+          )
+          if [ -n "${{ inputs.sequence }}" ]; then
+            args+=(--sequence "${{ inputs.sequence }}")
+          fi
+          if [ -n "${{ inputs.notes }}" ]; then
+            args+=(--notes "${{ inputs.notes }}")
+          fi
+          scribekey-models "${args[@]}"
+
+      - name: Generate and validate outputs
+        run: |
+          scribekey-models generate --check
+          scribekey-models validate
+          pytest -q
+
+      - name: Create Promotion Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: promote/${{ inputs.channel }}-${{ inputs.release }}
+          title: "chore(release): promote ${{ inputs.channel }} to ${{ inputs.release }}"
+          commit-message: "chore(release): promote ${{ inputs.channel }} to ${{ inputs.release }}"
+          body: |
+            ### ScribeKey Channel Promotion Request
+
+            - **Channel**: `${{ inputs.channel }}`
+            - **Target Release**: `${{ inputs.release }}`
+            - **Notes**: ${{ inputs.notes }}
+
+            This automated pull request was prepared by the `prepare-promotion` workflow.
+            All catalogue guardrails, schema validations, and reproducibility checks have passed.
+
+            > **Atomic Publication Boundary**: Human review and merge are required.
+            > Merging this pull request into `main` publishes the release-safe distribution metadata to consumers.
+            > Auto-merge is disabled.
+          labels: |
+            release
+            distribution

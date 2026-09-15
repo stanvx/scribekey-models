@@ -30,6 +30,28 @@ BINARY_EXTENSIONS = {
     ".zip",
     ".h5",
 }
+EXECUTABLE_PAYLOAD_EXTENSIONS = {
+    ".apk",
+    ".dex",
+    ".so",
+    ".jar",
+    ".class",
+    ".sh",
+    ".bash",
+    ".exe",
+    ".elf",
+    ".bat",
+    ".cmd",
+    ".ps1",
+    ".dylib",
+    ".dll",
+}
+KNOWN_RUNTIME_FAMILIES = {"sherpa-onnx", "gguf", "pyannote"}
+KNOWN_CONFIG_FAMILIES = {
+    "speech-model-catalog",
+    "cleanup-model-catalog",
+    "speaker-diarization-manifest",
+}
 PERMISSIVE_LICENSES = {
     "MIT",
     "Apache-2.0",
@@ -187,6 +209,61 @@ def validate_identities_and_integrity(
     return issues
 
 
+def validate_no_executable_payloads(
+    speech_data: dict[str, Any],
+    cleanup_data: dict[str, Any],
+    diarization_data: dict[str, Any],
+    releases_data: dict[str, dict[str, Any]] | None = None,
+) -> list[GuardrailIssue]:
+    """Ensure no model payload is an executable binary or script rejected by Android."""
+    issues: list[GuardrailIssue] = []
+
+    def _check(source: str, filename: str, entity_id: str) -> None:
+        ext = Path(filename).suffix.lower()
+        if ext in EXECUTABLE_PAYLOAD_EXTENSIONS:
+            issues.append(
+                GuardrailIssue(
+                    source,
+                    f"Entity '{entity_id}' references executable payload '{filename}' ({ext}) "
+                    f"which is rejected by Android runtime guardrails",
+                )
+            )
+
+    for model in speech_data.get("models", []):
+        m_id = model.get("id", "unknown")
+        for f in model.get("files", []):
+            _check("catalog/speech.yaml", f.get("name", ""), m_id)
+
+    prod = cleanup_data.get("production")
+    if prod:
+        m_id = prod.get("modelId", "production")
+        url = prod.get("downloadUrl", "")
+        if url:
+            _check("catalog/cleanup.yaml", Path(url).name, m_id)
+
+    for cand in cleanup_data.get("candidates", []):
+        m_id = cand.get("modelId", "candidate")
+        url = cand.get("downloadUrl", "")
+        if url:
+            _check("catalog/cleanup.yaml", Path(url).name, m_id)
+
+    for model in diarization_data.get("models", []):
+        role = model.get("role", "unknown")
+        url = model.get("downloadUrl", "")
+        if url:
+            _check("catalog/diarization.yaml", Path(url).name, role)
+
+    if releases_data:
+        for rel_id, rel_data in releases_data.items():
+            recovery = rel_data.get("recoveryAssets", {})
+            for model in recovery.get("clearedModels", []):
+                m_id = model.get("modelId", "unknown")
+                for f in model.get("files", []):
+                    _check(f"catalog/releases/{rel_id}.yaml", f.get("name", ""), m_id)
+
+    return issues
+
+
 def validate_release_safety(root: Path = ROOT) -> list[GuardrailIssue]:
     issues: list[GuardrailIssue] = []
 
@@ -211,7 +288,7 @@ def validate_release_safety(root: Path = ROOT) -> list[GuardrailIssue]:
         except OSError:
             pass
 
-        # Check for accidentally committed secrets or tokens (only in non-code text/config files or skip guardrails itself)
+        # Check for accidentally committed secrets or tokens (only in non-code text/config files)
         if path.suffix in {".yaml", ".yml", ".json", ".md", ".txt", ".toml", ".env", ".key"}:
             try:
                 content = path.read_text(encoding="utf-8", errors="ignore")
@@ -253,6 +330,14 @@ def validate_redistribution_clearance(release_data: dict[str, Any]) -> list[Guar
                     f"Model '{model_id}' license '{lic}' is not in redistribution-cleared permissive licenses ({', '.join(sorted(PERMISSIVE_LICENSES))})",
                 )
             )
+
+        for f in item.get("files", []):
+            fname = f.get("name", "")
+            sha = f.get("sha256", "")
+            if not HEX64_RE.match(sha):
+                issues.append(GuardrailIssue("recoveryAssets", f"Model '{model_id}' file '{fname}' invalid sha256: '{sha}'"))
+            url = f.get("upstreamUrl", "")
+            issues.extend(validate_download_url("recoveryAssets", url, f"{model_id}:{fname}"))
 
     return issues
 
@@ -321,6 +406,98 @@ def validate_channel_and_release_pointers(
                     f"Channel '{chan_name}' points to non-existent release definition: {rel_file}",
                 )
             )
+
+        seq = chan.get("sequence")
+        if seq is None or not isinstance(seq, int) or seq < 1:
+            issues.append(
+                GuardrailIssue(
+                    "catalog/channels.yaml",
+                    f"Channel '{chan_name}' has invalid anti-rollback sequence '{seq}' (must be integer >= 1)",
+                )
+            )
+
+        issued_at = chan.get("issuedAt")
+        if not issued_at:
+            issues.append(
+                GuardrailIssue(
+                    "catalog/channels.yaml",
+                    f"Channel '{chan_name}' missing required 'issuedAt' timestamp",
+                )
+            )
+
+        comp = chan.get("compatibility")
+        if not comp or not isinstance(comp, dict):
+            issues.append(
+                GuardrailIssue(
+                    "catalog/channels.yaml",
+                    f"Channel '{chan_name}' missing required 'compatibility' metadata",
+                )
+            )
+        else:
+            api_level = comp.get("minAndroidApiLevel")
+            if not isinstance(api_level, int) or api_level < 21:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/channels.yaml",
+                        f"Channel '{chan_name}' compatibility.minAndroidApiLevel must be integer >= 21, got '{api_level}'",
+                    )
+                )
+
+            app_version = comp.get("minAppVersionCode")
+            if not isinstance(app_version, int) or app_version < 1:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/channels.yaml",
+                        f"Channel '{chan_name}' compatibility.minAppVersionCode must be integer >= 1, got '{app_version}'",
+                    )
+                )
+
+            schema_ver = comp.get("catalogsSchemaVersion")
+            if not isinstance(schema_ver, int) or schema_ver < 1:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/channels.yaml",
+                        f"Channel '{chan_name}' compatibility.catalogsSchemaVersion must be integer >= 1, got '{schema_ver}'",
+                    )
+                )
+
+            families = comp.get("supportedRuntimeFamilies")
+            if not isinstance(families, list) or not families:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/channels.yaml",
+                        f"Channel '{chan_name}' compatibility.supportedRuntimeFamilies must be non-empty list",
+                    )
+                )
+            else:
+                unknown = set(families) - KNOWN_RUNTIME_FAMILIES
+                if unknown:
+                    issues.append(
+                        GuardrailIssue(
+                            "catalog/channels.yaml",
+                            f"Channel '{chan_name}' contains unknown runtime families: {unknown} "
+                            f"(known: {KNOWN_RUNTIME_FAMILIES})",
+                        )
+                    )
+
+            configs = comp.get("supportedConfigFamilies")
+            if not isinstance(configs, list) or not configs:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/channels.yaml",
+                        f"Channel '{chan_name}' compatibility.supportedConfigFamilies must be non-empty list",
+                    )
+                )
+            else:
+                unknown_cfg = set(configs) - KNOWN_CONFIG_FAMILIES
+                if unknown_cfg:
+                    issues.append(
+                        GuardrailIssue(
+                            "catalog/channels.yaml",
+                            f"Channel '{chan_name}' contains unknown config families: {unknown_cfg} "
+                            f"(known: {KNOWN_CONFIG_FAMILIES})",
+                        )
+                    )
 
     return issues
 

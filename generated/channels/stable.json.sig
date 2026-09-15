@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "algorithm": "ed25519",
+  "algorithm": "SHA256withECDSA",
   "keyId": "scribekey-release-2026",
   "targetFile": "stable.json",
-  "targetSha256": "f932e09e4a183c11682deaf7963482dbc6111ec5f543651af18950aa10e663ab",
-  "signature": "9dzvMhZgvLUeApmRT/J8TkXk42v3fUSCuVGkLLScwpOoH0jEp71pAJv8fvz5qE7El0zAJnL7FhnZsIZ2zXY+CQ=="
+  "targetSha256": "3b442b87b55b8462a3c507c35a79eee2f64e2bc26d73f62941c9773652a07ef3",
+  "signature": "MEUCIQDaZVpnkXZLVsucqoEzOrgj6bghlzKUCXiNAWomUC+beQIgYrJ/tfW7FH1tQgioFuK74GeJ97EVNXsHhL8JqPjafrk="
 }

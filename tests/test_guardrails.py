@@ -6,6 +6,7 @@ from scribekey_models.guardrails import (
     validate_channel_and_release_pointers,
     validate_identities_and_integrity,
     validate_immutable_source_refs,
+    validate_no_executable_payloads,
     validate_redistribution_clearance,
     validate_release_safety,
 )
@@ -154,14 +155,94 @@ def test_guardrail_rejects_un_cleared_recovery_assets() -> None:
     assert any("is not in redistribution-cleared permissive licenses" in issue.message for issue in issues)
 
 
+def test_guardrail_rejects_executable_payload_extensions() -> None:
+    speech_data = {
+        "models": [
+            {
+                "id": "exploit-model",
+                "files": [
+                    {
+                        "name": "malicious.apk",
+                        "downloadUrl": "https://example.com/malicious.apk",
+                        "sha256": "a" * 64,
+                        "sizeBytes": 100,
+                    }
+                ],
+            }
+        ]
+    }
+    issues = validate_no_executable_payloads(speech_data, {}, {})
+    assert any("executable payload 'malicious.apk' (.apk)" in issue.message for issue in issues)
+
+
 def test_guardrail_rejects_channel_pointing_to_missing_release(tmp_path: Path) -> None:
+    base_comp = {
+        "minAndroidApiLevel": 28,
+        "minAppVersionCode": 10,
+        "catalogsSchemaVersion": 1,
+        "supportedRuntimeFamilies": ["sherpa-onnx", "gguf", "pyannote"],
+        "supportedConfigFamilies": [
+            "speech-model-catalog",
+            "cleanup-model-catalog",
+            "speaker-diarization-manifest",
+        ],
+    }
     channels_data = {
         "channels": {
-            "qa": {"targetRelease": "non-existent-release"},
-            "stable": {"targetRelease": "also-missing"},
+            "qa": {
+                "targetRelease": "non-existent-release",
+                "sequence": 1,
+                "issuedAt": "2026-09-15T11:00:00Z",
+                "compatibility": dict(base_comp),
+            },
+            "stable": {
+                "targetRelease": "also-missing",
+                "sequence": 1,
+                "issuedAt": "2026-09-15T11:00:00Z",
+                "compatibility": dict(base_comp),
+            },
         }
     }
     releases_dir = tmp_path / "releases"
     releases_dir.mkdir()
     issues = validate_channel_and_release_pointers(channels_data, releases_dir, tmp_path)
     assert any("points to non-existent release" in issue.message for issue in issues)
+
+
+def test_guardrail_rejects_invalid_sequence_and_unknown_runtime_family(tmp_path: Path) -> None:
+    rel_file = tmp_path / "releases" / "2026.09.1.yaml"
+    rel_file.parent.mkdir(parents=True, exist_ok=True)
+    rel_file.write_text("{}", encoding="utf-8")
+
+    channels_data = {
+        "channels": {
+            "qa": {
+                "targetRelease": "2026.09.1",
+                "sequence": 0,  # Invalid sequence (< 1)
+                "issuedAt": "2026-09-15T11:00:00Z",
+                "compatibility": {
+                    "minAndroidApiLevel": 28,
+                    "minAppVersionCode": 10,
+                    "catalogsSchemaVersion": 1,
+                    "supportedRuntimeFamilies": ["unknown_runtime"],
+                    "supportedConfigFamilies": ["speech-model-catalog"],
+                },
+            },
+            "stable": {
+                "targetRelease": "2026.09.1",
+                "sequence": 1,
+                "issuedAt": "2026-09-15T11:00:00Z",
+                "compatibility": {
+                    "minAndroidApiLevel": 16,  # Invalid API level (< 21)
+                    "minAppVersionCode": 10,
+                    "catalogsSchemaVersion": 1,
+                    "supportedRuntimeFamilies": ["sherpa-onnx"],
+                    "supportedConfigFamilies": ["speech-model-catalog"],
+                },
+            },
+        }
+    }
+    issues = validate_channel_and_release_pointers(channels_data, tmp_path / "releases", tmp_path)
+    assert any("invalid anti-rollback sequence '0'" in issue.message for issue in issues)
+    assert any("unknown runtime families" in issue.message for issue in issues)
+    assert any("minAndroidApiLevel must be integer >= 21" in issue.message for issue in issues)

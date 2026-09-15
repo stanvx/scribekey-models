@@ -12,7 +12,7 @@
     },
     "algorithm": {
       "type": "string",
-      "enum": ["ed25519"]
+      "enum": ["SHA256withECDSA", "ecdsa-p256-sha256"]
     },
     "keyId": {
       "type": "string"

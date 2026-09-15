@@ -13,6 +13,7 @@ from scribekey_models.guardrails import (
     validate_channel_and_release_pointers,
     validate_identities_and_integrity,
     validate_immutable_source_refs,
+    validate_no_executable_payloads,
     validate_redistribution_clearance,
     validate_release_safety,
     validate_release_snapshot_integrity,
@@ -245,7 +246,9 @@ def generate_all_artifacts() -> list[GenerationArtifact]:
                     manifest = build_channel_distribution_manifest(
                         chan_name,
                         releases[rel_id],
-                        updated_at=chan_info.get("updatedAt"),
+                        sequence=int(chan_info.get("sequence", 1)),
+                        issued_at=chan_info.get("issuedAt"),
+                        compatibility=chan_info.get("compatibility"),
                         notes=chan_info.get("notes"),
                     )
                     artifacts.append(
@@ -310,6 +313,10 @@ def validate() -> list[ValidationIssue]:
         issues.append(ValidationIssue(g_issue.source, g_issue.message))
 
     for g_issue in validate_release_safety(ROOT):
+        issues.append(ValidationIssue(g_issue.source, g_issue.message))
+
+    releases_data = load_all_releases_data()
+    for g_issue in validate_no_executable_payloads(speech_data, cleanup_data, diarization_data, releases_data):
         issues.append(ValidationIssue(g_issue.source, g_issue.message))
 
     if CHANNELS_FILE.exists():

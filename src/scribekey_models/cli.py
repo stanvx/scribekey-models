@@ -15,7 +15,12 @@ from scribekey_models.catalog import (
     generate_cleanup_catalog,
     generate_diarization_manifest,
     generate_speech_catalog,
+    load_all_releases_data,
     validate,
+)
+from scribekey_models.mirror import (
+    check_mirror_configuration,
+    plan_release_mirror,
 )
 from scribekey_models.promotion import (
     create_release_manifest,
@@ -23,6 +28,9 @@ from scribekey_models.promotion import (
 )
 from scribekey_models.signing import (
     DEFAULT_KEY_ID,
+    export_private_key_pem,
+    export_public_key_pem,
+    generate_keypair,
     load_private_key,
     load_public_key,
     sign_file,
@@ -73,6 +81,12 @@ def _parser() -> argparse.ArgumentParser:
         help="Distribution channel to update",
     )
     promote_cmd.add_argument("--release", required=True, help="Release ID to promote")
+    promote_cmd.add_argument(
+        "--sequence",
+        type=int,
+        default=None,
+        help="Explicit monotonic sequence number (auto-increments if omitted)",
+    )
     promote_cmd.add_argument("--notes", default="", help="Optional promotion notes")
     promote_cmd.add_argument("--key", default=None, help="Private signing key (string)")
     promote_cmd.add_argument(
@@ -129,6 +143,18 @@ def _parser() -> argparse.ArgumentParser:
         help="Path to public key file",
     )
 
+    # keygen
+    keygen_cmd = subparsers.add_parser("keygen", help="Generate a P-256 ECDSA keypair for release signing")
+    keygen_cmd.add_argument("--out-public", type=Path, default=None, help="Path to write public key PEM")
+    keygen_cmd.add_argument("--out-private", type=Path, default=None, help="Path to write private key PEM")
+
+    # mirror
+    mirror_cmd = subparsers.add_parser("mirror", help="Inspect and dry-run redistribution-cleared mirror assets")
+    mirror_subs = mirror_cmd.add_subparsers(dest="mirror_command", required=True)
+    m_plan = mirror_subs.add_parser("plan", help="Plan mirror assets for a release")
+    m_plan.add_argument("--release", required=True, help="Release ID (e.g. 2026.09.1)")
+    mirror_subs.add_parser("check", help="Check mirror configuration status")
+
     return parser
 
 
@@ -141,16 +167,20 @@ def _resolve_private_key(args: argparse.Namespace):
 
 
 def _git_source_identity(root: Path) -> tuple[str, str]:
-    completed = subprocess.run(
-        ["git", "show", "-s", "--format=%H%n%cI", "HEAD"],
-        cwd=root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    commit, timestamp = completed.stdout.strip().splitlines()
-    created_at = datetime.datetime.fromisoformat(timestamp).astimezone(datetime.UTC)
-    return commit, created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        completed = subprocess.run(
+            ["git", "show", "-s", "--format=%H%n%cI", "HEAD"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        commit, timestamp = completed.stdout.strip().splitlines()
+        created_at = datetime.datetime.fromisoformat(timestamp).astimezone(datetime.UTC)
+        return commit, created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (subprocess.SubprocessError, ValueError, OSError):
+        now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return "0" * 40, now
 
 
 def main() -> None:
@@ -179,12 +209,11 @@ def main() -> None:
         speech_str = json.dumps(generate_speech_catalog(), indent=2, ensure_ascii=False) + "\n"
         diarization_str = json.dumps(generate_diarization_manifest(), indent=2, ensure_ascii=False) + "\n"
         cleanup_str = json.dumps(generate_cleanup_catalog(), indent=2, ensure_ascii=False) + "\n"
-        git_commit, created_at = _git_source_identity(root)
+        git_commit, _ = _git_source_identity(root)
 
         manifest = create_release_manifest(
             args.id,
             args.description or f"Release {args.id}",
-            created_at=created_at,
             speech_content=speech_str,
             diarization_content=diarization_str,
             cleanup_content=cleanup_str,
@@ -214,6 +243,7 @@ def main() -> None:
         result = promote(
             args.channel,
             args.release,
+            sequence=args.sequence,
             notes=args.notes,
             private_key=priv_key,
             key_id=args.key_id,
@@ -244,6 +274,42 @@ def main() -> None:
             raise SystemExit(1)
         print(f"Verification succeeded for {args.target}")
         return
+
+    if args.command == "keygen":
+        priv, pub = generate_keypair()
+        priv_pem = export_private_key_pem(priv)
+        pub_pem = export_public_key_pem(pub)
+        if args.out_public:
+            args.out_public.parent.mkdir(parents=True, exist_ok=True)
+            args.out_public.write_text(pub_pem, encoding="utf-8")
+            print(f"Public key written to {args.out_public}")
+        else:
+            print("Public Key:")
+            print(pub_pem)
+        if args.out_private:
+            args.out_private.parent.mkdir(parents=True, exist_ok=True)
+            args.out_private.write_text(priv_pem, encoding="utf-8")
+            print(f"Private key written to {args.out_private}")
+        else:
+            print("Private Key (Store as MODEL_RELEASE_SIGNING_KEY secret):")
+            print(priv_pem)
+        return
+
+    if args.command == "mirror":
+        if args.mirror_command == "check":
+            status = check_mirror_configuration()
+            print(json.dumps(status, indent=2))
+            return
+        if args.mirror_command == "plan":
+            releases = load_all_releases_data()
+            if args.release not in releases:
+                print(f"Error: Release '{args.release}' not found in catalog/releases/")
+                raise SystemExit(1)
+            plans = plan_release_mirror(releases[args.release])
+            print(f"Found {len(plans)} cleared mirror assets for release {args.release}:")
+            for p in plans:
+                print(f" - {p.model_id}:{p.filename} ({p.license_id}) -> {p.target_path}")
+            return
 
     issues = validate()
     if issues:

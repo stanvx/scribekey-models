@@ -20,7 +20,7 @@ TEST_KEY_PUB = FIXTURES_DIR / "test_key.pub"
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schemas" / "signature.schema.json"
 
 
-def test_ed25519_sign_and_verify_roundtrip(tmp_path: Path) -> None:
+def test_ecdsa_p256_sign_and_verify_roundtrip(tmp_path: Path) -> None:
     priv, pub = generate_keypair()
     payload_file = tmp_path / "data.json"
     payload_file.write_text('{"status": "ok"}\n', encoding="utf-8")
@@ -45,17 +45,18 @@ def test_signature_payload_matches_schema(tmp_path: Path) -> None:
     validator = Draft202012Validator(schema)
     errors = list(validator.iter_errors(sig_data))
     assert errors == []
+    assert sig_data["algorithm"] == "SHA256withECDSA"
 
 
-def test_verify_detects_payload_tampering(tmp_path: Path) -> None:
+def test_verify_detects_exact_byte_tampering(tmp_path: Path) -> None:
     priv, pub = generate_keypair()
     payload_file = tmp_path / "manifest.json"
     payload_file.write_text('{"version": "1.0.0"}\n', encoding="utf-8")
 
     sig_file = sign_file(payload_file, priv)
 
-    # Tamper with file content
-    payload_file.write_text('{"version": "1.0.1-tampered"}\n', encoding="utf-8")
+    # Tamper with file content by even a single byte (e.g. whitespace)
+    payload_file.write_text('{"version": "1.0.0"} \n', encoding="utf-8")
 
     ok, msg = verify_file(payload_file, sig_file, public_key=pub)
     assert ok is False
