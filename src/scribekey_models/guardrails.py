@@ -75,6 +75,11 @@ def validate_download_url(source: str, url: str, model_id: str) -> list[Guardrai
     if not url:
         return [GuardrailIssue(source, f"Model '{model_id}' has empty downloadUrl")]
 
+    if not url.startswith("https://"):
+        issues.append(
+            GuardrailIssue(source, f"Model '{model_id}' download source must use HTTPS: {url}")
+        )
+
     for ref in MUTABLE_REFS:
         if f"/resolve/{ref}/" in url or f"/{ref}/" in url:
             issues.append(
@@ -109,8 +114,9 @@ def validate_immutable_source_refs(
     for model in speech_data.get("models", []):
         model_id = model.get("id", "unknown")
         for f in model.get("files", []):
-            url = f.get("downloadUrl", "")
-            issues.extend(validate_download_url("catalog/speech.yaml", url, model_id))
+            urls = [f.get("downloadUrl", ""), *f.get("downloadUrls", [])]
+            for url in urls:
+                issues.extend(validate_download_url("catalog/speech.yaml", url, model_id))
 
     # Check cleanup models
     prod = cleanup_data.get("production")
@@ -121,8 +127,9 @@ def validate_immutable_source_refs(
             issues.append(
                 GuardrailIssue("catalog/cleanup.yaml", f"Cleanup model '{model_id}' revision cannot be mutable ref '{rev}'")
             )
-        url = prod.get("downloadUrl", "")
-        issues.extend(validate_download_url("catalog/cleanup.yaml", url, model_id))
+        urls = [prod.get("downloadUrl", ""), *prod.get("downloadUrls", [])]
+        for url in urls:
+            issues.extend(validate_download_url("catalog/cleanup.yaml", url, model_id))
 
     for cand in cleanup_data.get("candidates", []):
         model_id = cand.get("modelId", "candidate")
@@ -131,8 +138,9 @@ def validate_immutable_source_refs(
             issues.append(
                 GuardrailIssue("catalog/cleanup.yaml", f"Cleanup candidate '{model_id}' revision cannot be mutable ref '{rev}'")
             )
-        url = cand.get("downloadUrl", "")
-        issues.extend(validate_download_url("catalog/cleanup.yaml", url, model_id))
+        urls = [cand.get("downloadUrl", ""), *cand.get("downloadUrls", [])]
+        for url in urls:
+            issues.extend(validate_download_url("catalog/cleanup.yaml", url, model_id))
 
     # Check diarization models
     for model in diarization_data.get("models", []):
@@ -142,8 +150,9 @@ def validate_immutable_source_refs(
             issues.append(
                 GuardrailIssue("catalog/diarization.yaml", f"Diarization model '{role}' sourceRevision cannot be mutable ref '{rev}'")
             )
-        url = model.get("downloadUrl", "")
-        issues.extend(validate_download_url("catalog/diarization.yaml", url, role))
+        urls = [model.get("downloadUrl", ""), *model.get("downloadUrls", [])]
+        for url in urls:
+            issues.extend(validate_download_url("catalog/diarization.yaml", url, role))
 
     return issues
 

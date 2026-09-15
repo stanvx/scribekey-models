@@ -52,6 +52,54 @@ def test_guardrail_rejects_non_hex_hf_commit_in_download_url() -> None:
     assert any("must use a 40-character commit hash" in issue.message for issue in issues)
 
 
+def test_guardrail_checks_every_fallback_source_for_immutability() -> None:
+    speech_data = {
+        "models": [
+            {
+                "id": "fallback-model",
+                "files": [
+                    {
+                        "name": "model.onnx",
+                        "downloadUrl": "https://example.com/official/model.onnx",
+                        "downloadUrls": [
+                            "https://huggingface.co/org/repo/resolve/main/model.onnx"
+                        ],
+                        "sha256": "a" * 64,
+                        "sizeBytes": 100,
+                    }
+                ],
+            }
+        ]
+    }
+
+    issues = validate_immutable_source_refs(speech_data, {}, {})
+
+    assert any("uses mutable ref 'main'" in issue.message for issue in issues)
+
+
+def test_guardrail_requires_https_for_fallback_sources() -> None:
+    speech_data = {
+        "models": [
+            {
+                "id": "fallback-model",
+                "files": [
+                    {
+                        "name": "model.onnx",
+                        "downloadUrl": "https://example.com/official/model.onnx",
+                        "downloadUrls": ["http://mirror.example/model.onnx"],
+                        "sha256": "a" * 64,
+                        "sizeBytes": 100,
+                    }
+                ],
+            }
+        ]
+    }
+
+    issues = validate_immutable_source_refs(speech_data, {}, {})
+
+    assert any("download source must use HTTPS" in issue.message for issue in issues)
+
+
 def test_guardrail_rejects_mutable_revision_in_cleanup_and_diarization() -> None:
     cleanup_data = {
         "production": {
