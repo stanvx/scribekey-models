@@ -12,6 +12,7 @@ license = { text = "MIT" }
 dependencies = [
   "jsonschema>=4.23,<5",
   "PyYAML>=6.0,<7",
+  "cryptography>=42.0,<45",
 ]
 
 [project.optional-dependencies]

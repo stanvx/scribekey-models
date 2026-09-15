@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScribeKey Model Release",
+  "description": "Immutable release specification locking down qualified catalogue and model artifacts",
+  "type": "object",
+  "required": ["schema_version", "releaseId", "createdAt", "catalogs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "releaseId": {
+      "type": "string",
+      "pattern": "^[0-9]{4}\\.[0-9]{2}(\\.[0-9]+)?$"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "catalogs": {
+      "type": "object",
+      "required": ["speech", "diarization", "cleanup"],
+      "additionalProperties": false,
+      "properties": {
+        "speech": { "$ref": "#/$defs/catalogRef" },
+        "diarization": { "$ref": "#/$defs/catalogRef" },
+        "cleanup": { "$ref": "#/$defs/catalogRef" }
+      }
+    },
+    "recoveryAssets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "clearedModels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["modelId", "cleared", "licenseId"],
+            "additionalProperties": false,
+            "properties": {
+              "modelId": { "type": "string" },
+              "cleared": { "type": "boolean" },
+              "licenseId": { "type": "string" },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "sha256", "upstreamUrl"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string" },
+                    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                    "upstreamUrl": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "catalogRef": {
+      "type": "object",
+      "required": ["filename", "sha256", "sizeBytes"],
+      "additionalProperties": false,
+      "properties": {
+        "filename": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "sizeBytes": { "type": "integer", "minimum": 1 },
+        "modelCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

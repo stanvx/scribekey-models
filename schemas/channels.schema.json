@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScribeKey Channel Pointers",
+  "description": "Channel pointers mapping distribution channels (QA, stable) to immutable release IDs with monotonic anti-rollback sequence",
+  "type": "object",
+  "required": ["schema_version", "channels"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "channels": {
+      "type": "object",
+      "required": ["qa", "stable"],
+      "additionalProperties": false,
+      "properties": {
+        "qa": { "$ref": "#/$defs/channelPointer" },
+        "stable": { "$ref": "#/$defs/channelPointer" }
+      }
+    }
+  },
+  "$defs": {
+    "channelPointer": {
+      "type": "object",
+      "required": ["targetRelease", "sequence", "issuedAt", "compatibility"],
+      "additionalProperties": false,
+      "properties": {
+        "targetRelease": {
+          "type": "string",
+          "pattern": "^[0-9]{4}\\.[0-9]{2}(\\.[0-9]+)?$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "compatibility": {
+          "type": "object",
+          "required": [
+            "minAndroidApiLevel",
+            "minAppVersionCode",
+            "catalogsSchemaVersion",
+            "supportedRuntimeFamilies",
+            "supportedConfigFamilies"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "minAndroidApiLevel": {
+              "type": "integer",
+              "minimum": 21
+            },
+            "minAppVersionCode": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "catalogsSchemaVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "supportedRuntimeFamilies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["sherpa-onnx", "gguf", "pyannote"]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "supportedConfigFamilies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "speech-model-catalog",
+                  "cleanup-model-catalog",
+                  "speaker-diarization-manifest"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

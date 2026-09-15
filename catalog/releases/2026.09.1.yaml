@@ -1,0 +1,18 @@
+schema_version: 1
+releaseId: 2026.09.1
+createdAt: "2026-09-15T11:48:33Z"
+description: "Initial qualified release with Moonshine v2, Qwen3-ASR, Omnilingual CTC, Quill 0.8B, and PyAnnote Diarization"
+gitCommit: "18a0f57e21102a2521a730e610ac38bbb5aca708"
+catalogs:
+  speech:
+    filename: model_catalog.json
+    sha256: 6156a8e198f57fe2d82f7744c675c39b85a6e09ce92cd3cacc6e0ba7de5b15b8
+    sizeBytes: 33551
+  diarization:
+    filename: speaker_diarization_manifest.json
+    sha256: 7f6d32bb6a20b9ad26a03130645b7dbfaecc97d785dca6538a92f05b5f8cde45
+    sizeBytes: 1521
+  cleanup:
+    filename: cleanup_model_catalog.json
+    sha256: 50649bf2a0a2d38172448dcc74b840ff5ba301d6c1ea90be3a2aef681658a697
+    sizeBytes: 1182

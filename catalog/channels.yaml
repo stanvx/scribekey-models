@@ -1,0 +1,36 @@
+schema_version: 1
+channels:
+  qa:
+    targetRelease: "2026.09.1"
+    sequence: 1
+    issuedAt: "2026-09-15T11:48:33Z"
+    notes: "Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual CTC"
+    compatibility:
+      minAndroidApiLevel: 28
+      minAppVersionCode: 10
+      catalogsSchemaVersion: 1
+      supportedRuntimeFamilies:
+        - "sherpa-onnx"
+        - "gguf"
+        - "pyannote"
+      supportedConfigFamilies:
+        - "speech-model-catalog"
+        - "cleanup-model-catalog"
+        - "speaker-diarization-manifest"
+  stable:
+    targetRelease: "2026.09.1"
+    sequence: 1
+    issuedAt: "2026-09-15T11:48:33Z"
+    notes: "Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual CTC"
+    compatibility:
+      minAndroidApiLevel: 28
+      minAppVersionCode: 10
+      catalogsSchemaVersion: 1
+      supportedRuntimeFamilies:
+        - "sherpa-onnx"
+        - "gguf"
+        - "pyannote"
+      supportedConfigFamilies:
+        - "speech-model-catalog"
+        - "cleanup-model-catalog"
+        - "speaker-diarization-manifest"

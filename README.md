@@ -2,37 +2,40 @@
 
 Open model catalogue and distribution tooling for ScribeKey-compatible on-device models.
 
-This repository contains the public, reviewable model metadata that ScribeKey uses to describe supported speech, diarization, and transcript-cleanup models. It also contains the schemas and deterministic generator used to produce the runtime catalogues consumed by the Android app.
+This repository serves as the public release authority for model metadata consumed by ScribeKey on Android. It contains schemas, canonical model metadata, deterministic runtime catalogues, channel promotion records, and detached cryptographic signatures.
 
-The ScribeKey Android application is a separate project. Publishing this repository does not publish the app source code.
+Large model weights remain strictly outside Git history.
 
-## What belongs here
-
-- model identity, compatibility, download and integrity metadata
-- immutable upstream revisions and SHA-256 hashes
-- licence and attribution metadata
-- JSON schemas for catalogue formats
-- generated runtime catalogues
-- validation and catalogue generation tooling
-- release and mirroring automation for artifacts that are explicitly cleared for redistribution
-
-Research datasets, training experiments, private evaluation material, and exploratory model work do not belong in this repository.
-
-## Repository layout
+## Repository Layout
 
 ```text
-catalog/      Canonical human-edited model metadata
-schemas/      JSON schemas for canonical and generated formats
-generated/    Deterministic runtime catalogues consumed by ScribeKey
-src/          Validation and generation tooling
-tests/        Catalogue and reproducibility tests
-docs/         Contribution and compatibility notes
+catalog/      Canonical human-edited model metadata (speech, cleanup, diarization, releases, channels)
+schemas/      JSON schemas for canonical inputs, generated catalogues, and signatures
+generated/    Deterministic runtime catalogues and signed channel manifests
+keys/         Release signing public keys (release-signing.pub)
+src/          Validation, guardrail, promotion, and signing tooling
+tests/        Unit, reproducibility, and guardrail tests
+docs/         Operator guide, compatibility contracts, and contribution notes
 ```
 
-## Generate the runtime catalogues
+## Developer & Operator Quickstart
+
+Install with development dependencies:
 
 ```bash
 python -m pip install -e '.[dev]'
+```
+
+Run test suite and lint checks:
+
+```bash
+pytest -q
+ruff check src tests
+```
+
+Generate runtime catalogues:
+
+```bash
 scribekey-models generate
 ```
 
@@ -42,25 +45,32 @@ Check whether committed generated files are current:
 scribekey-models generate --check
 ```
 
-The same generator can target an Android assets directory or another consumer checkout:
-
-```bash
-scribekey-models generate --output-dir ../scribekey/app/src/main/assets
-```
-
-Validate canonical metadata and generated output:
+Validate canonical metadata, schemas, guardrails, and signatures:
 
 ```bash
 scribekey-models validate
 ```
 
-## Model artifacts
+Promote a release to QA or stable channel (fails closed without signing key):
 
-Large model files are not committed to Git history. Catalogue entries point at immutable upstream artifacts. ScribeKey may also publish redistribution-cleared mirrors through GitHub Releases or other public mirrors.
+```bash
+scribekey-models promote --channel qa --release 2026.09.1 --key-env MODEL_RELEASE_SIGNING_KEY
+```
 
-Each model keeps its own upstream licence. The repository licence applies to ScribeKey's catalogue metadata and tooling, not to third-party model weights.
+Inspect redistribution-cleared mirror plans (dry-run):
 
-## Contributing
+```bash
+scribekey-models mirror plan --release 2026.09.1
+scribekey-models mirror check
+```
 
-See [docs/adding-a-model.md](docs/adding-a-model.md). Pull requests should use immutable upstream revisions, include hashes and licence information, and leave `generated/` reproducible from `catalog/`.
+## Trust Contract & Promotion Flow
 
+- **Detached Signatures**: Generated channels carry detached P-256 / `SHA256withECDSA` signatures over the exact published bytes.
+- **Anti-Rollback Sequence**: Every channel manifest contains a strictly monotonically increasing integer sequence. Emergency rollbacks increment the sequence number while pointing to an older immutable release snapshot.
+- **Relative Path Resolution**: Channel manifests point to release snapshots via relative paths (`../releases/<release-id>/<filename>`), preserving deterministic resolution.
+- **Reviewable PR Publication Boundary**: Production promotions run via GitHub Actions (`workflow_dispatch`), generating a reviewable PR. Merging the PR into `main` is the atomic publication boundary. Auto-merge is disabled.
+- **Failure Safety**: Promotion runs in isolated staging; failures leave the previous stable release intact.
+
+See [docs/operator-guide.md](docs/operator-guide.md) for full operator flow and required CI secrets.
+See [docs/compatibility.md](docs/compatibility.md) for consumer runtime compatibility details.
