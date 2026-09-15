@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scribekey.app/schemas/android-cleanup-catalog.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "production"
+  ],
+  "definitions": {
+    "cleanupManifest": {
+      "type": "object",
+      "required": [
+        "modelId",
+        "displayName",
+        "revision",
+        "bundleFileName",
+        "downloadUrl",
+        "sizeBytes",
+        "sha256",
+        "minDeviceMemoryGb",
+        "minimumApiLevel",
+        "supportedAbis",
+        "supportedLanguages",
+        "systemPrompt",
+        "promptTemplate",
+        "maxInputCharacters",
+        "maxOutputCharacters",
+        "maxOutputTokens",
+        "contextTokens",
+        "topK",
+        "topP",
+        "temperature",
+        "deterministicDecoding",
+        "samplerSeed",
+        "license",
+        "attribution",
+        "licenseUrl",
+        "privacyDisclosure"
+      ],
+      "properties": {
+        "modelId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundleFileName": {
+          "type": "string",
+          "pattern": "^[^/\\\\]+\\.gguf$"
+        },
+        "downloadUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "minDeviceMemoryGb": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumApiLevel": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "supportedAbis": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supportedLanguages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "systemPrompt": {
+          "type": "string"
+        },
+        "promptTemplate": {
+          "type": "string"
+        },
+        "maxInputCharacters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxOutputCharacters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contextTokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "topK": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "topP": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "repetitionPenalty": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "deterministicDecoding": {
+          "type": "boolean"
+        },
+        "samplerSeed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "license": {
+          "type": "string"
+        },
+        "attribution": {
+          "type": "string"
+        },
+        "licenseUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "privacyDisclosure": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "production": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/definitions/cleanupManifest"
+        }
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/cleanupManifest"
+      }
+    }
+  }
+}

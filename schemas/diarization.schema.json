@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scribekey.app/schemas/android-diarization-catalog.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packageId",
+    "runtime",
+    "models"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "packageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "revision"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        }
+      }
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "role",
+          "fileName",
+          "downloadUrl",
+          "sizeBytes",
+          "sha256",
+          "sourceRepository",
+          "sourceRevision",
+          "licenseId",
+          "licenseUrl"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "SEGMENTATION",
+              "EMBEDDING"
+            ]
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "downloadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sourceRepository": {
+            "type": "string"
+          },
+          "sourceRevision": {
+            "type": "string"
+          },
+          "licenseId": {
+            "type": "string"
+          },
+          "licenseUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}

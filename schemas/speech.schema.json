@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scribekey.app/schemas/android-speech-catalog.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "models"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "family",
+          "displayName",
+          "badge",
+          "diskMb",
+          "minRamMb",
+          "minApiLevel",
+          "transcriptionMode",
+          "supportsTimestamps",
+          "supportsPunctuation",
+          "supportsLanguageDetection",
+          "files",
+          "sherpaConfig",
+          "info"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "family": {
+            "enum": [
+              "MOONSHINE",
+              "PARAKEET",
+              "CANARY",
+              "DISTIL_WHISPER"
+            ]
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "badge": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "LIVE_ENGLISH",
+              "BEST_ENGLISH_ACCURACY",
+              "LIGHTWEIGHT",
+              "MULTILINGUAL"
+            ]
+          },
+          "retired": {
+            "type": "boolean"
+          },
+          "replacementId": {
+            "type": "string"
+          },
+          "diskMb": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minRamMb": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minApiLevel": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "transcriptionMode": {
+            "enum": [
+              "SEGMENTED",
+              "CACHE_AWARE_ONLINE"
+            ]
+          },
+          "supportsTimestamps": {
+            "type": "boolean"
+          },
+          "supportsPunctuation": {
+            "type": "boolean"
+          },
+          "supportsLanguageDetection": {
+            "type": "boolean"
+          },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "downloadUrl",
+                "sizeBytes",
+                "sha256"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "downloadUrl": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "sizeBytes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "sherpaConfig": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "modelDir": {
+                "type": "string"
+              }
+            }
+          },
+          "info": {
+            "type": "object",
+            "required": [
+              "paramsBadge",
+              "architecture",
+              "languages"
+            ],
+            "properties": {
+              "paramsBadge": {
+                "type": "string"
+              },
+              "architecture": {
+                "type": "string"
+              },
+              "languages": {
+                "type": "string"
+              }
+            }
+          },
+          "languageTiers": {
+            "type": "object",
+            "required": [
+              "transcriptionReady",
+              "broadCoverage",
+              "adaptationRequired"
+            ],
+            "properties": {
+              "transcriptionReady": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "broadCoverage": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "adaptationRequired": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "sourceModel",
+              "exportRepository",
+              "exportRevision",
+              "exportVariant",
+              "licenseId",
+              "licenseUrl"
+            ],
+            "properties": {
+              "sourceModel": {
+                "type": "string"
+              },
+              "exportRepository": {
+                "type": "string"
+              },
+              "exportRevision": {
+                "type": "string"
+              },
+              "exportVariant": {
+                "type": "string"
+              },
+              "licenseId": {
+                "type": "string"
+              },
+              "licenseUrl": {
+                "type": "string"
+              }
+            }
+          },
+          "streamLanguage": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

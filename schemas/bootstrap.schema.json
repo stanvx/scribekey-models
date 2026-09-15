@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scribekey.app/schemas/android-bootstrap-catalogue.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generator",
+    "speech",
+    "diarization",
+    "cleanup"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generator": {
+      "type": "object",
+      "required": [
+        "source",
+        "format_version"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "format_version": {
+          "type": "string"
+        }
+      }
+    },
+    "speech": {
+      "type": "object",
+      "required": [
+        "models"
+      ],
+      "properties": {
+        "models": {
+          "type": "array"
+        }
+      }
+    },
+    "diarization": {
+      "type": "object",
+      "required": [
+        "packageId",
+        "runtime",
+        "models"
+      ],
+      "properties": {
+        "packageId": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object"
+        },
+        "models": {
+          "type": "array"
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "required": [
+        "production"
+      ],
+      "properties": {
+        "production": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "candidates": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}
