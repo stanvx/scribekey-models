@@ -42,6 +42,12 @@ Check whether committed generated files are current:
 scribekey-models generate --check
 ```
 
+The same generator can target an Android assets directory or another consumer checkout:
+
+```bash
+scribekey-models generate --output-dir ../scribekey/app/src/main/assets
+```
+
 Validate canonical metadata and generated output:
 
 ```bash

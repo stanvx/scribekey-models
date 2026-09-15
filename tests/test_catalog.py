@@ -7,6 +7,7 @@ from scribekey_models.catalog import (
     generate_bootstrap_catalog,
     validate,
 )
+from scribekey_models.cli import _parser
 
 
 def test_catalogue_validates() -> None:
@@ -40,4 +41,10 @@ def test_bootstrap_identifies_public_source() -> None:
 
 def test_committed_generated_files_are_current() -> None:
     assert export_generated(GENERATED_DIR, check=True) == []
+
+
+def test_generate_cli_accepts_consumer_output_directory(tmp_path: Path) -> None:
+    args = _parser().parse_args(["generate", "--output-dir", str(tmp_path), "--check"])
+    assert args.output_dir == tmp_path
+    assert args.check is True
 
