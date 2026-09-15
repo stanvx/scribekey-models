@@ -18,11 +18,10 @@ channels:
       - cleanup-model-catalog
       - speaker-diarization-manifest
   stable:
-    targetRelease: 2026.09.1
-    sequence: 2
-    issuedAt: '2026-09-15T15:08:38Z'
-    notes: Galaxy benchmark qualification completed for Moonshine v2 Tiny/Base, Omnilingual
-      ASR 300M INT8, and Qwen3-ASR 0.6B INT8.
+    targetRelease: 2026.09.2
+    sequence: 3
+    issuedAt: '2026-09-15T21:24:32Z'
+    notes: Promote verified model selection guidance release after QA publication
     compatibility:
       minAndroidApiLevel: 28
       minAppVersionCode: 10
