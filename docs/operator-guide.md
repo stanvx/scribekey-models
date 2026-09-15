@@ -50,12 +50,12 @@ This freezes the catalog snapshots under `generated/releases/2026.09.1/` and rec
 
 1. In GitHub Actions, navigate to **Prepare Release Promotion** (`workflow_dispatch`).
 2. Select target channel (`qa` or `stable`), enter `release` ID (`2026.09.1`), and optional notes.
-3. The workflow runs with the secret `MODEL_RELEASE_SIGNING_KEY`:
+3. The workflow pauses for approval on the protected `release-signing` environment, then runs with that environment's `MODEL_RELEASE_SIGNING_KEY` secret:
    - Validates release definitions and guardrails.
    - Stages promotion and signs the channel manifest in temporary isolation.
    - Fails closed immediately if `MODEL_RELEASE_SIGNING_KEY` is not configured.
    - Opens a Pull Request from branch `promote/<channel>-<release>`.
-4. **Atomic Publication Boundary**: A human must review the PR diff. Merging the PR into `main` atomically publishes the verified distribution metadata to clients. Auto-merge is strictly disabled.
+4. **Atomic Publication Boundary**: A human must review the PR diff. Merging the PR into protected `main` atomically publishes the verified distribution metadata to clients. Auto-merge is strictly disabled.
 
 ### 3. Emergency Rollback
 
@@ -83,7 +83,7 @@ scribekey-models promote --channel qa --release 2026.09.1 --key-env MODEL_RELEAS
 
 The production P-256 (SECP256R1) signing key is provisioned for this release authority:
 
-- the private PKCS#8 PEM is stored only in the repository's GitHub Actions secret named `MODEL_RELEASE_SIGNING_KEY`
+- the private PKCS#8 PEM is stored in the 1Password item `ScribeKey Models Release Signing Key` and copied into the protected `release-signing` environment's GitHub Actions secret named `MODEL_RELEASE_SIGNING_KEY`
 - the matching SubjectPublicKeyInfo PEM public key is committed at `keys/release-signing.pub`
 - the Android application embeds the same public key as its catalogue trust root
 - committed QA, stable, and release-manifest signatures are produced from that production key
