@@ -66,6 +66,14 @@
             "type": "string",
             "format": "uri"
           },
+          "downloadUrls": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
           "sizeBytes": {
             "type": "integer",
             "minimum": 1

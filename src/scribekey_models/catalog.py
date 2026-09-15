@@ -118,6 +118,11 @@ def generate_speech_catalog() -> dict[str, Any]:
                 "downloadUrl": file["downloadUrl"],
                 "sizeBytes": file["sizeBytes"],
                 "sha256": file["sha256"],
+                **(
+                    {"downloadUrls": file["downloadUrls"]}
+                    if file.get("downloadUrls")
+                    else {}
+                ),
             }
             for file in model["files"]
         ]
@@ -152,6 +157,11 @@ def generate_diarization_manifest() -> dict[str, Any]:
                 "role": model["role"],
                 "fileName": model["fileName"],
                 "downloadUrl": model["downloadUrl"],
+                **(
+                    {"downloadUrls": model["downloadUrls"]}
+                    if model.get("downloadUrls")
+                    else {}
+                ),
                 "sizeBytes": model["sizeBytes"],
                 "sha256": model["sha256"],
                 "sourceRepository": model["sourceRepository"],
@@ -171,6 +181,11 @@ def _cleanup_entry(model: dict[str, Any]) -> dict[str, Any]:
         "revision": model["revision"],
         "bundleFileName": model["bundleFileName"],
         "downloadUrl": model["downloadUrl"],
+        **(
+            {"downloadUrls": model["downloadUrls"]}
+            if model.get("downloadUrls")
+            else {}
+        ),
         "sizeBytes": model["sizeBytes"],
         "sha256": model["sha256"],
         "minDeviceMemoryGb": model["minDeviceMemoryGb"],

@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import scribekey_models.catalog as catalog_module
 from scribekey_models.catalog import (
     GENERATED_DIR,
     export_generated,
     generate_all_artifacts,
+    generate_cleanup_catalog,
+    generate_diarization_manifest,
     generate_speech_catalog,
     validate,
 )
@@ -70,4 +73,31 @@ def test_speech_refresh_keeps_legacy_ids_and_adds_new_runtime_shapes() -> None:
         for model in models.values()
         for file in model["files"]
     )
+
+
+def test_runtime_catalogues_preserve_ordered_fallback_sources(monkeypatch) -> None:
+    speech = catalog_module.load_speech_catalog_data()
+    speech["models"][0]["files"][0]["downloadUrls"] = [
+        "https://mirror.example/model.onnx",
+        "https://github.example/model.onnx",
+    ]
+    monkeypatch.setattr(catalog_module, "load_speech_catalog_data", lambda: speech)
+    assert generate_speech_catalog()["models"][0]["files"][0]["downloadUrls"] == [
+        "https://mirror.example/model.onnx",
+        "https://github.example/model.onnx",
+    ]
+
+    cleanup = catalog_module.load_cleanup_catalog_data()
+    cleanup["production"]["downloadUrls"] = ["https://mirror.example/cleanup.gguf"]
+    monkeypatch.setattr(catalog_module, "load_cleanup_catalog_data", lambda: cleanup)
+    assert generate_cleanup_catalog()["production"]["downloadUrls"] == [
+        "https://mirror.example/cleanup.gguf"
+    ]
+
+    diarization = catalog_module.load_diarization_catalog_data()
+    diarization["models"][0]["downloadUrls"] = ["https://mirror.example/diarization.onnx"]
+    monkeypatch.setattr(catalog_module, "load_diarization_catalog_data", lambda: diarization)
+    assert generate_diarization_manifest()["models"][0]["downloadUrls"] == [
+        "https://mirror.example/diarization.onnx"
+    ]
 
