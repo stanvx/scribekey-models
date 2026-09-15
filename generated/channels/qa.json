@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "channel": "qa",
-  "sequence": 2,
-  "issuedAt": "2026-09-15T15:04:39Z",
-  "releaseId": "2026.09.1",
+  "sequence": 3,
+  "issuedAt": "2026-09-15T21:22:59Z",
+  "releaseId": "2026.09.2",
   "compatibility": {
     "minAndroidApiLevel": 28,
     "minAppVersionCode": 10,
@@ -22,23 +22,23 @@
   "catalogs": {
     "speech": {
       "filename": "model_catalog.json",
-      "path": "../releases/2026.09.1/model_catalog.json",
-      "sha256": "6156a8e198f57fe2d82f7744c675c39b85a6e09ce92cd3cacc6e0ba7de5b15b8",
-      "sizeBytes": 33551
+      "path": "../releases/2026.09.2/model_catalog.json",
+      "sha256": "1a836c51899220faf14c0f459f9aa08b0731791d4f136a387d518ae699a878e9",
+      "sizeBytes": 35647
     },
     "diarization": {
       "filename": "speaker_diarization_manifest.json",
-      "path": "../releases/2026.09.1/speaker_diarization_manifest.json",
+      "path": "../releases/2026.09.2/speaker_diarization_manifest.json",
       "sha256": "7f6d32bb6a20b9ad26a03130645b7dbfaecc97d785dca6538a92f05b5f8cde45",
       "sizeBytes": 1521
     },
     "cleanup": {
       "filename": "cleanup_model_catalog.json",
-      "path": "../releases/2026.09.1/cleanup_model_catalog.json",
+      "path": "../releases/2026.09.2/cleanup_model_catalog.json",
       "sha256": "50649bf2a0a2d38172448dcc74b840ff5ba301d6c1ea90be3a2aef681658a697",
       "sizeBytes": 1182
     }
   },
-  "notes": "Galaxy benchmark qualification completed for Moonshine v2 Tiny/Base, Omnilingual ASR 300M INT8, and Qwen3-ASR 0.6B INT8.",
-  "gitCommit": "18a0f57e21102a2521a730e610ac38bbb5aca708"
+  "notes": "Publish model selection guidance to QA for end-to-end distribution acceptance",
+  "gitCommit": "80b0945235903a955a49b04604b9b59f2cf625d1"
 }
