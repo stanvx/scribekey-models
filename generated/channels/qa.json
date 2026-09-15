@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "channel": "qa",
-  "sequence": 1,
-  "issuedAt": "2026-09-15T11:48:33Z",
+  "sequence": 2,
+  "issuedAt": "2026-09-15T15:04:39Z",
   "releaseId": "2026.09.1",
   "compatibility": {
     "minAndroidApiLevel": 28,
@@ -39,6 +39,6 @@
       "sizeBytes": 1182
     }
   },
-  "notes": "Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual CTC",
+  "notes": "Galaxy benchmark qualification completed for Moonshine v2 Tiny/Base, Omnilingual ASR 300M INT8, and Qwen3-ASR 0.6B INT8.",
   "gitCommit": "18a0f57e21102a2521a730e610ac38bbb5aca708"
 }
