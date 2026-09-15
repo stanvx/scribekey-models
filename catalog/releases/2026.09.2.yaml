@@ -1,0 +1,18 @@
+schema_version: 1
+releaseId: 2026.09.2
+createdAt: '2026-09-15T21:15:54Z'
+description: Model selection guidance and friendly catalogue metadata
+catalogs:
+  speech:
+    filename: model_catalog.json
+    sha256: 1a836c51899220faf14c0f459f9aa08b0731791d4f136a387d518ae699a878e9
+    sizeBytes: 35647
+  diarization:
+    filename: speaker_diarization_manifest.json
+    sha256: 7f6d32bb6a20b9ad26a03130645b7dbfaecc97d785dca6538a92f05b5f8cde45
+    sizeBytes: 1521
+  cleanup:
+    filename: cleanup_model_catalog.json
+    sha256: 50649bf2a0a2d38172448dcc74b840ff5ba301d6c1ea90be3a2aef681658a697
+    sizeBytes: 1182
+gitCommit: 80b0945235903a955a49b04604b9b59f2cf625d1

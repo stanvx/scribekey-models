@@ -1,0 +1,37 @@
+{
+  "production": {
+    "modelId": "quill",
+    "displayName": "Quill",
+    "revision": "4cc2cc3c8e7ea9ee69126becd55be23a3a949899",
+    "bundleFileName": "quill-0.8b-Q4_K_M.gguf",
+    "downloadUrl": "https://huggingface.co/Quobi/Quill/resolve/4cc2cc3c8e7ea9ee69126becd55be23a3a949899/quill-0.8b-Q4_K_M.gguf",
+    "sizeBytes": 529296832,
+    "sha256": "aa54d6f6108d66e4b60a57bdc04ecca6e84e073504918a64b41ac4a0f816f16d",
+    "minDeviceMemoryGb": 8,
+    "minimumApiLevel": 28,
+    "supportedAbis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "supportedLanguages": [
+      "en"
+    ],
+    "systemPrompt": "You clean up dictated text.",
+    "promptTemplate": "QuillChatMl",
+    "maxInputCharacters": 4000,
+    "maxOutputCharacters": 8000,
+    "maxOutputTokens": 256,
+    "contextTokens": 4096,
+    "topK": 1,
+    "topP": 1.0,
+    "temperature": 0.0,
+    "repetitionPenalty": null,
+    "deterministicDecoding": true,
+    "samplerSeed": 42,
+    "license": "Apache 2.0",
+    "attribution": "Quill by Quobi, based on Qwen3.5-0.8B by Qwen.",
+    "licenseUrl": "https://huggingface.co/Quobi/Quill",
+    "privacyDisclosure": "Transcript text stays on this device."
+  },
+  "candidates": []
+}

@@ -1,0 +1,32 @@
+{
+  "packageId": "pyannote3-eres2net-base",
+  "runtime": {
+    "name": "sherpa-onnx",
+    "version": "1.13.6",
+    "revision": "1cb484af5e69d3c7803c1eb0b3b5ab8041e0e911"
+  },
+  "models": [
+    {
+      "role": "SEGMENTATION",
+      "fileName": "pyannote-segmentation-3.0-int8.onnx",
+      "downloadUrl": "https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/340b52f1f5cd12d45a30fa284691417eaad2ff92/model.int8.onnx",
+      "sizeBytes": 1540514,
+      "sha256": "10a438c2e0d90ed5f5da545cec2244d887315f6dbbbf1d3d564d00745b01952e",
+      "sourceRepository": "csukuangfj/sherpa-onnx-pyannote-segmentation-3-0",
+      "sourceRevision": "340b52f1f5cd12d45a30fa284691417eaad2ff92",
+      "licenseId": "MIT",
+      "licenseUrl": "https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/blob/340b52f1f5cd12d45a30fa284691417eaad2ff92/LICENSE"
+    },
+    {
+      "role": "EMBEDDING",
+      "fileName": "3dspeaker-eres2net-base-16k.onnx",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx",
+      "sizeBytes": 39593761,
+      "sha256": "1a331345f04805badbb495c775a6ddffcdd1a732567d5ec8b3d5749e3c7a5e4b",
+      "sourceRepository": "iic/speech_eres2net_base_sv_zh-cn_3dspeaker_16k",
+      "sourceRevision": "v1.0.1",
+      "licenseId": "Apache-2.0",
+      "licenseUrl": "https://github.com/modelscope/3D-Speaker/blob/065629c313eaf1a01c65c640c46d77e61e9607b4/LICENSE"
+    }
+  ]
+}

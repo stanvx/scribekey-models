@@ -75,6 +75,41 @@ def test_speech_refresh_keeps_legacy_ids_and_adds_new_runtime_shapes() -> None:
     )
 
 
+def test_speech_metadata_projects_user_facing_guidance_without_changing_ids() -> None:
+    models = {model["id"]: model for model in generate_speech_catalog()["models"]}
+
+    assert models["moonshine-v2-tiny-en"]["displayName"] == "Moonshine Tiny"
+    assert models["moonshine-v2-tiny-en"]["bestFor"]
+    assert models["moonshine-v2-base-en"]["description"]
+    assert models["omnilingual-asr-300m"]["displayName"] == "Omnilingual 300M"
+    assert models["qwen3-asr-0.6b"]["bestFor"]
+    assert models["nemotron-en-0.6b"]["displayName"] == "Nemotron English Live"
+    assert models["nemotron-3.5-0.6b-560ms"]["displayName"] == "Nemotron 3.5 Multilingual Live"
+    assert set(models) >= {
+        "moonshine-v2-tiny-en",
+        "moonshine-v2-base-en",
+        "omnilingual-asr-300m",
+        "qwen3-asr-0.6b",
+        "parakeet-110m",
+        "canary-180m",
+        "parakeet-0.6b-v3",
+        "parakeet-unified-0.6b",
+        "nemotron-en-0.6b",
+        "nemotron-3.5-0.6b-560ms",
+    }
+
+
+def test_speech_guidance_is_optional_for_imported_or_custom_models(monkeypatch) -> None:
+    speech = catalog_module.load_speech_catalog_data()
+    speech["models"][0].pop("description", None)
+    speech["models"][0].pop("bestFor", None)
+    monkeypatch.setattr(catalog_module, "load_speech_catalog_data", lambda: speech)
+
+    model = generate_speech_catalog()["models"][0]
+    assert "description" not in model
+    assert "bestFor" not in model
+
+
 def test_runtime_catalogues_preserve_ordered_fallback_sources(monkeypatch) -> None:
     speech = catalog_module.load_speech_catalog_data()
     speech["models"][0]["files"][0]["downloadUrls"] = [
@@ -100,4 +135,3 @@ def test_runtime_catalogues_preserve_ordered_fallback_sources(monkeypatch) -> No
     assert generate_diarization_manifest()["models"][0]["downloadUrls"] == [
         "https://mirror.example/diarization.onnx"
     ]
-
