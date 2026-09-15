@@ -34,6 +34,8 @@ jobs:
   prepare-promotion:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment:
+      name: release-signing
     permissions:
       contents: write
       pull-requests: write
