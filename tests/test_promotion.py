@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -278,7 +279,9 @@ def test_cli_promotion_fails_closed_without_signing_key(monkeypatch: pytest.Monk
     """The promote CLI command must fail closed when no signing key is provided."""
     monkeypatch.delenv("MODEL_RELEASE_SIGNING_KEY", raising=False)
     cmd = [
-        str(ROOT / ".venv" / "bin" / "scribekey-models"),
+        sys.executable,
+        "-c",
+        "from scribekey_models.cli import main; main()",
         "promote",
         "--channel",
         "stable",
