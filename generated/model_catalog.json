@@ -116,7 +116,7 @@
       "id": "moonshine-v2-tiny-en",
       "outcome": "LIGHTWEIGHT",
       "family": "MOONSHINE",
-      "displayName": "Moonshine v2 Tiny",
+      "displayName": "Moonshine Tiny",
       "badge": "New",
       "diskMb": 43,
       "minRamMb": 2048,
@@ -125,6 +125,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": false,
       "supportsLanguageDetection": false,
+      "description": "Compact English transcription for everyday notes and lower-storage devices.",
+      "bestFor": "Lightweight English transcription when download size and memory matter most.",
       "files": [
         {
           "name": "encoder_model.ort",
@@ -167,7 +169,7 @@
       "id": "moonshine-v2-base-en",
       "outcome": "LIGHTWEIGHT",
       "family": "MOONSHINE",
-      "displayName": "Moonshine v2 Base",
+      "displayName": "Moonshine Base",
       "badge": "New",
       "diskMb": 135,
       "minRamMb": 2048,
@@ -176,6 +178,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": false,
       "supportsLanguageDetection": false,
+      "description": "English transcription with a larger Moonshine model for users who can spare more storage.",
+      "bestFor": "English transcription when you want more model capacity than the Tiny option.",
       "files": [
         {
           "name": "encoder_model.ort",
@@ -227,6 +231,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": false,
       "supportsLanguageDetection": false,
+      "description": "English transcription in a compact Whisper-derived model.",
+      "bestFor": "A familiar English model when you want a middle-ground download size.",
       "files": [
         {
           "name": "encoder.int8.onnx",
@@ -261,7 +267,7 @@
       "id": "parakeet-110m",
       "outcome": "LIGHTWEIGHT",
       "family": "PARAKEET",
-      "displayName": "Parakeet 110M",
+      "displayName": "Parakeet Compact",
       "badge": "",
       "diskMb": 458,
       "minRamMb": 3072,
@@ -270,6 +276,8 @@
       "supportsTimestamps": true,
       "supportsPunctuation": true,
       "supportsLanguageDetection": false,
+      "description": "Compact English transcription with timestamps and punctuation support.",
+      "bestFor": "English notes on devices that cannot comfortably fit the larger models.",
       "files": [
         {
           "name": "model.onnx",
@@ -298,7 +306,7 @@
       "id": "canary-180m",
       "outcome": "MULTILINGUAL",
       "family": "CANARY",
-      "displayName": "Canary 180M",
+      "displayName": "Canary Multilingual",
       "badge": "",
       "diskMb": 207,
       "minRamMb": 4096,
@@ -307,6 +315,8 @@
       "supportsTimestamps": true,
       "supportsPunctuation": true,
       "supportsLanguageDetection": true,
+      "description": "Multilingual transcription for English, Spanish, German, and French audio.",
+      "bestFor": "Switching among the four supported languages with timestamps and punctuation.",
       "files": [
         {
           "name": "encoder.int8.onnx",
@@ -341,7 +351,7 @@
       "id": "omnilingual-asr-300m",
       "outcome": "MULTILINGUAL",
       "family": "OMNILINGUAL",
-      "displayName": "Omnilingual ASR 300M",
+      "displayName": "Omnilingual 300M",
       "badge": "Experimental",
       "diskMb": 349,
       "minRamMb": 4096,
@@ -350,6 +360,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": false,
       "supportsLanguageDetection": false,
+      "description": "Broad-coverage transcription from Meta's Omnilingual ASR family.",
+      "bestFor": "Exploring transcription across 1600+ languages, especially languages underserved by smaller models.",
       "files": [
         {
           "name": "model.int8.onnx",
@@ -386,7 +398,7 @@
       "id": "qwen3-asr-0.6b",
       "outcome": "MULTILINGUAL",
       "family": "QWEN3_ASR",
-      "displayName": "Qwen3-ASR 0.6B",
+      "displayName": "Qwen3 ASR",
       "badge": "Experimental",
       "diskMb": 942,
       "minRamMb": 6144,
@@ -395,6 +407,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": false,
       "supportsLanguageDetection": false,
+      "description": "Multilingual speech recognition covering 30 languages and Chinese dialects.",
+      "bestFor": "Multilingual transcription when broad language and dialect coverage matter more than download size.",
       "files": [
         {
           "name": "conv_frontend.onnx",
@@ -505,7 +519,7 @@
       "id": "parakeet-0.6b-v3",
       "outcome": "MULTILINGUAL",
       "family": "PARAKEET",
-      "displayName": "Parakeet 0.6B v3",
+      "displayName": "Parakeet Multilingual",
       "badge": "",
       "diskMb": 670,
       "minRamMb": 6144,
@@ -514,6 +528,8 @@
       "supportsTimestamps": true,
       "supportsPunctuation": true,
       "supportsLanguageDetection": true,
+      "description": "Streaming-capable transcription for 25 European languages.",
+      "bestFor": "Multilingual live dictation across the qualified European language set.",
       "files": [
         {
           "name": "encoder.int8.onnx",
@@ -554,7 +570,7 @@
       "id": "parakeet-unified-0.6b",
       "outcome": "BEST_ENGLISH_ACCURACY",
       "family": "PARAKEET",
-      "displayName": "Parakeet Unified 0.6B",
+      "displayName": "Parakeet English",
       "badge": "",
       "diskMb": 663,
       "minRamMb": 6144,
@@ -563,6 +579,8 @@
       "supportsTimestamps": true,
       "supportsPunctuation": true,
       "supportsLanguageDetection": false,
+      "description": "English transcription with timestamps and punctuation support.",
+      "bestFor": "Final English transcripts when English accuracy is the priority.",
       "files": [
         {
           "name": "encoder.int8.onnx",
@@ -653,7 +671,7 @@
       "id": "nemotron-en-0.6b",
       "outcome": "LIVE_ENGLISH",
       "family": "PARAKEET",
-      "displayName": "Nemotron Speech Streaming EN 0.6B",
+      "displayName": "Nemotron English Live",
       "badge": "Experimental",
       "diskMb": 662,
       "minRamMb": 6144,
@@ -662,6 +680,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": true,
       "supportsLanguageDetection": false,
+      "description": "English live transcription using a cache-aware streaming model.",
+      "bestFor": "Live English dictation and captions with low-latency incremental results.",
       "files": [
         {
           "name": "encoder.int8.onnx",
@@ -710,7 +730,7 @@
       "id": "nemotron-3.5-0.6b-560ms",
       "outcome": "MULTILINGUAL",
       "family": "PARAKEET",
-      "displayName": "Nemotron 3.5 Streaming 0.6B",
+      "displayName": "Nemotron 3.5 Multilingual Live",
       "badge": "Experimental",
       "diskMb": 651,
       "minRamMb": 6144,
@@ -719,6 +739,8 @@
       "supportsTimestamps": false,
       "supportsPunctuation": true,
       "supportsLanguageDetection": false,
+      "description": "Cache-aware live transcription across a qualified set of 40 locales.",
+      "bestFor": "Live multilingual dictation when automatic language selection is useful.",
       "streamLanguage": "auto",
       "files": [
         {

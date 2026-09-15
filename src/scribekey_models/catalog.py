@@ -104,6 +104,9 @@ def generate_speech_catalog() -> dict[str, Any]:
                 "supportsLanguageDetection": model.get("supportsLanguageDetection", False),
             }
         )
+        for field in ("description", "bestFor"):
+            if model.get(field) is not None:
+                entry[field] = model[field]
         if model.get("retired"):
             entry["retired"] = True
         if model.get("deprecated"):
