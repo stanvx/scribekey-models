@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScribeKey Channel Distribution Manifest",
+  "description": "Deterministic distribution manifest consumed by Android",
+  "type": "object",
+  "required": ["schemaVersion", "channel", "releaseId", "updatedAt", "catalogs"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["qa", "stable"]
+    },
+    "releaseId": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "gitCommit": {
+      "type": "string"
+    },
+    "catalogs": {
+      "type": "object",
+      "required": ["speech", "diarization", "cleanup"],
+      "additionalProperties": false,
+      "properties": {
+        "speech": { "$ref": "#/$defs/distributionCatalogRef" },
+        "diarization": { "$ref": "#/$defs/distributionCatalogRef" },
+        "cleanup": { "$ref": "#/$defs/distributionCatalogRef" }
+      }
+    },
+    "recoveryAssets": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "distributionCatalogRef": {
+      "type": "object",
+      "required": ["filename", "path", "sha256", "sizeBytes"],
+      "additionalProperties": false,
+      "properties": {
+        "filename": { "type": "string" },
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "sizeBytes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

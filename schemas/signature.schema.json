@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScribeKey Detached Signature",
+  "description": "Detached cryptographic signature payload for distribution artifacts",
+  "type": "object",
+  "required": ["schemaVersion", "algorithm", "keyId", "targetFile", "targetSha256", "signature"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "algorithm": {
+      "type": "string",
+      "enum": ["ed25519"]
+    },
+    "keyId": {
+      "type": "string"
+    },
+    "targetFile": {
+      "type": "string"
+    },
+    "targetSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "signature": {
+      "type": "string"
+    }
+  }
+}

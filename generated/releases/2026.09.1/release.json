@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "releaseId": "2026.09.1",
+  "createdAt": "2026-09-15T11:48:33Z",
+  "description": "Initial qualified release with Moonshine v2, Qwen3-ASR, Omnilingual CTC, Quill 0.8B, and PyAnnote Diarization",
+  "gitCommit": "18a0f57e21102a2521a730e610ac38bbb5aca708",
+  "catalogs": {
+    "speech": {
+      "filename": "model_catalog.json",
+      "sha256": "6156a8e198f57fe2d82f7744c675c39b85a6e09ce92cd3cacc6e0ba7de5b15b8",
+      "sizeBytes": 33551
+    },
+    "diarization": {
+      "filename": "speaker_diarization_manifest.json",
+      "sha256": "7f6d32bb6a20b9ad26a03130645b7dbfaecc97d785dca6538a92f05b5f8cde45",
+      "sizeBytes": 1521
+    },
+    "cleanup": {
+      "filename": "cleanup_model_catalog.json",
+      "sha256": "50649bf2a0a2d38172448dcc74b840ff5ba301d6c1ea90be3a2aef681658a697",
+      "sizeBytes": 1182
+    }
+  },
+  "recoveryAssets": {
+    "description": "Redistribution-cleared models explicitly permitted for mirror recovery",
+    "clearedModels": [
+      {
+        "modelId": "moonshine-v2-tiny-en",
+        "cleared": true,
+        "licenseId": "MIT",
+        "files": [
+          {
+            "name": "preprocess.onnx",
+            "sha256": "9e32470bb9a695bce1ddc62ea180cf7f955d9bcf69a48d8a57754eb5f33f671c",
+            "upstreamUrl": "https://huggingface.co/csukuangfj2/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27/resolve/d1e6c30921780b8508d04b492dfb3ce8a51605d4/preprocess.onnx"
+          },
+          {
+            "name": "encode.int8.onnx",
+            "sha256": "fe086d7734a7541f5379b3628e93237e19665675681c2f9011be149a4ba127e1",
+            "upstreamUrl": "https://huggingface.co/csukuangfj2/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27/resolve/d1e6c30921780b8508d04b492dfb3ce8a51605d4/encode.int8.onnx"
+          },
+          {
+            "name": "uncached_decode.int8.onnx",
+            "sha256": "752aa40bc2a2a07c1b504260a4f5f59079f584e03f0b2fbe0cfbf32a5ec2c6fe",
+            "upstreamUrl": "https://huggingface.co/csukuangfj2/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27/resolve/d1e6c30921780b8508d04b492dfb3ce8a51605d4/uncached_decode.int8.onnx"
+          },
+          {
+            "name": "cached_decode.int8.onnx",
+            "sha256": "ab96c0d832960f9a28bf2a9d82136006766ea9c2182c40c7ff5e1358be85a3fa",
+            "upstreamUrl": "https://huggingface.co/csukuangfj2/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27/resolve/d1e6c30921780b8508d04b492dfb3ce8a51605d4/cached_decode.int8.onnx"
+          },
+          {
+            "name": "tokens.txt",
+            "sha256": "1165c2aeb9f72f457a83be2d459a09054f27490acd9b41bd43794dfd25e296ea",
+            "upstreamUrl": "https://huggingface.co/csukuangfj2/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27/resolve/d1e6c30921780b8508d04b492dfb3ce8a51605d4/tokens.txt"
+          }
+        ]
+      },
+      {
+        "modelId": "quill",
+        "cleared": true,
+        "licenseId": "Apache-2.0",
+        "files": [
+          {
+            "name": "quill-0.8b-Q4_K_M.gguf",
+            "sha256": "8251e6ba6fc5fe5ae5c2c77d6bafe1ec4fdf56926f22d56e65cfb2a6fe12c5b0",
+            "upstreamUrl": "https://huggingface.co/Quobi/Quill/resolve/4cc2cc3c8e7ea9ee69126becd55be23a3a949899/quill-0.8b-Q4_K_M.gguf"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+schema_version: 1
+channels:
+  qa:
+    targetRelease: "2026.09.1"
+    updatedAt: "2026-09-15T11:48:33Z"
+    notes: "Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual CTC"
+  stable:
+    targetRelease: "2026.09.1"
+    updatedAt: "2026-09-15T11:48:33Z"
+    notes: "Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual CTC"

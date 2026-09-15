@@ -20,18 +20,26 @@ def test_generation_is_deterministic(tmp_path: Path) -> None:
     export_generated(first)
     export_generated(second)
     assert {
-        path.name: path.read_bytes() for path in first.iterdir()
+        str(path.relative_to(first)): path.read_bytes()
+        for path in first.rglob("*")
+        if path.is_file()
     } == {
-        path.name: path.read_bytes() for path in second.iterdir()
+        str(path.relative_to(second)): path.read_bytes()
+        for path in second.rglob("*")
+        if path.is_file()
     }
 
 
 def test_expected_runtime_artifacts_are_generated() -> None:
-    assert {artifact.filename for artifact in generate_all_artifacts()} == {
+    filenames = {artifact.filename for artifact in generate_all_artifacts()}
+    assert {
         "model_catalog.json",
         "speaker_diarization_manifest.json",
         "cleanup_model_catalog.json",
-    }
+    }.issubset(filenames)
+    assert "channels/qa.json" in filenames
+    assert "channels/stable.json" in filenames
+    assert "releases/2026.09.1/release.json" in filenames
 
 
 def test_committed_generated_files_are_current() -> None:

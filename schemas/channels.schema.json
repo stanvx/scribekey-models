@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScribeKey Channel Pointers",
+  "description": "Channel pointers mapping distribution channels (QA, stable) to immutable release IDs",
+  "type": "object",
+  "required": ["schema_version", "channels"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "channels": {
+      "type": "object",
+      "required": ["qa", "stable"],
+      "additionalProperties": false,
+      "properties": {
+        "qa": { "$ref": "#/$defs/channelPointer" },
+        "stable": { "$ref": "#/$defs/channelPointer" }
+      }
+    }
+  },
+  "$defs": {
+    "channelPointer": {
+      "type": "object",
+      "required": ["targetRelease", "updatedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "targetRelease": {
+          "type": "string",
+          "pattern": "^[0-9]{4}\\.[0-9]{2}(\\.[0-9]+)?$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
