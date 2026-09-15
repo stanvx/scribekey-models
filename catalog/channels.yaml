@@ -1,11 +1,10 @@
 schema_version: 1
 channels:
   qa:
-    targetRelease: 2026.09.1
-    sequence: 2
-    issuedAt: '2026-09-15T15:04:39Z'
-    notes: Galaxy benchmark qualification completed for Moonshine v2 Tiny/Base, Omnilingual
-      ASR 300M INT8, and Qwen3-ASR 0.6B INT8.
+    targetRelease: 2026.09.2
+    sequence: 3
+    issuedAt: '2026-09-15T21:22:59Z'
+    notes: Publish model selection guidance to QA for end-to-end distribution acceptance
     compatibility:
       minAndroidApiLevel: 28
       minAppVersionCode: 10
