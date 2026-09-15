@@ -11,6 +11,7 @@ import yaml
 
 from scribekey_models.catalog import (
     GENERATED_DIR,
+    ROOT,
     export_generated,
     generate_cleanup_catalog,
     generate_diarization_manifest,
@@ -18,6 +19,7 @@ from scribekey_models.catalog import (
     load_all_releases_data,
     validate,
 )
+from scribekey_models.health import check_channel_sources, write_report
 from scribekey_models.mirror import (
     check_mirror_configuration,
     plan_release_mirror,
@@ -154,6 +156,30 @@ def _parser() -> argparse.ArgumentParser:
     m_plan = mirror_subs.add_parser("plan", help="Plan mirror assets for a release")
     m_plan.add_argument("--release", required=True, help="Release ID (e.g. 2026.09.1)")
     mirror_subs.add_parser("check", help="Check mirror configuration status")
+
+    # health
+    health_cmd = subparsers.add_parser(
+        "health",
+        help="Check the published channel's configured model artifact sources",
+    )
+    health_cmd.add_argument(
+        "--channel",
+        choices=["qa", "stable"],
+        default="stable",
+        help="Published channel to inspect",
+    )
+    health_cmd.add_argument(
+        "--timeout",
+        type=float,
+        default=20.0,
+        help="Per-source network timeout in seconds",
+    )
+    health_cmd.add_argument(
+        "--report",
+        type=Path,
+        default=None,
+        help="Optional path for the machine-readable JSON report",
+    )
 
     return parser
 
@@ -310,6 +336,26 @@ def main() -> None:
             for p in plans:
                 print(f" - {p.model_id}:{p.filename} ({p.license_id}) -> {p.target_path}")
             return
+
+    if args.command == "health":
+        report = check_channel_sources(
+            ROOT,
+            channel=args.channel,
+            timeout_seconds=args.timeout,
+        )
+        if args.report:
+            write_report(report, args.report)
+        verified_checksums = sum(check.checksum_verified for check in report.checks)
+        print(
+            f"Checked {len(report.checks)} sources for {report.channel}/{report.release_id}; "
+            f"provider checksum metadata verified for {verified_checksums}."
+        )
+        if not report.healthy:
+            for check in report.failures:
+                print(f"{check.target.model_id}:{check.target.file_name}: {check.reason}")
+            raise SystemExit(1)
+        print("All configured model sources are healthy")
+        return
 
     issues = validate()
     if issues:

@@ -77,7 +77,30 @@ scribekey-models generate --check
 
 # Promote a release (requires signing key)
 scribekey-models promote --channel qa --release 2026.09.1 --key-env MODEL_RELEASE_SIGNING_KEY
+
+# Check every configured source for the current stable release
+scribekey-models health --channel stable --report health-report.json
 ```
+
+### 5. Automated Source Health
+
+`.github/workflows/source-health.yml` checks the published `stable` release every day and can also be run manually.
+It validates the repository first, then probes every configured official, mirror, and recovery URL without modifying
+catalogue or channel state. Each source is checked against the same immutable file identity used by Android:
+
+- the endpoint must be reachable
+- the observed artifact size must match `sizeBytes` when the server exposes it
+- provider SHA-256 metadata is compared with the catalogue checksum when the host exposes a trustworthy SHA-256 header
+
+Hugging Face LFS exposes immutable object metadata before redirecting to its CDN, so the check can verify those
+checksums without downloading multi-hundred-megabyte model weights. Hosts that do not expose a checksum are still
+checked for reachability and exact size; Android remains the final SHA-256 verifier before any downloaded bytes are
+promoted into use.
+
+If any source fails, the workflow creates or updates one `model-source-health` issue for the affected channel/release.
+The incident identity is stable across repeated runs, so an unresolved outage does not create duplicate issues. When
+all configured sources recover, the workflow closes the matching incident automatically. Health checks never edit an
+immutable release, move a channel pointer, or affect models already installed on user devices.
 
 ## Production Key Provisioning Status
 

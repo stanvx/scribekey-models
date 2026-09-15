@@ -1,0 +1,105 @@
+name: Model source health
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: model-source-health
+  cancel-in-progress: false
+
+jobs:
+  stable-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install tooling
+        run: python -m pip install -e '.[dev]'
+
+      - name: Validate publication metadata
+        run: |
+          scribekey-models generate --check
+          scribekey-models validate
+
+      - name: Check stable model sources
+        id: health
+        continue-on-error: true
+        run: scribekey-models health --channel stable --report health-report.json
+
+      - name: Reconcile source-health incident
+        if: always() && hashFiles('health-report.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create model-source-health \
+            --repo "$GITHUB_REPOSITORY" \
+            --color B60205 \
+            --description "Automated model distribution source failure" \
+            --force
+
+          gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --label model-source-health \
+            --limit 100 \
+            --json number,body > open-health-issues.json
+
+          existing="$(python - <<'PY'
+          import json
+
+          report = json.load(open("health-report.json", encoding="utf-8"))
+          issues = json.load(open("open-health-issues.json", encoding="utf-8"))
+          marker = report["incidentMarker"]
+          print(next((issue["number"] for issue in issues if marker in (issue.get("body") or "")), ""))
+          PY
+          )"
+
+          healthy="$(python -c 'import json; print(str(json.load(open("health-report.json"))["healthy"]).lower())')"
+          title="$(python -c 'import json; print(json.load(open("health-report.json"))["incidentTitle"])')"
+          python - <<'PY'
+          import json
+
+          report = json.load(open("health-report.json", encoding="utf-8"))
+          open("health-issue.md", "w", encoding="utf-8").write(report["incidentBody"])
+          PY
+
+          if [[ "$healthy" == "true" ]]; then
+            if [[ -n "$existing" ]]; then
+              gh issue close "$existing" \
+                --repo "$GITHUB_REPOSITORY" \
+                --comment "Automated source health recovered. All configured stable sources pass the current metadata check."
+            fi
+          elif [[ -n "$existing" ]]; then
+            gh issue edit "$existing" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body-file health-issue.md
+          else
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body-file health-issue.md \
+              --label model-source-health
+          fi
+
+      - name: Fail run when a source is unhealthy
+        if: steps.health.outcome == 'failure'
+        run: exit 1
