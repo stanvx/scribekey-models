@@ -20,10 +20,10 @@ channels:
       - speaker-diarization-manifest
   stable:
     targetRelease: 2026.09.1
-    sequence: 1
-    issuedAt: '2026-09-15T11:48:33Z'
-    notes: Initial qualified release with Moonshine v2, Qwen3-ASR, and Omnilingual
-      CTC
+    sequence: 2
+    issuedAt: '2026-09-15T15:08:38Z'
+    notes: Galaxy benchmark qualification completed for Moonshine v2 Tiny/Base, Omnilingual
+      ASR 300M INT8, and Qwen3-ASR 0.6B INT8.
     compatibility:
       minAndroidApiLevel: 28
       minAppVersionCode: 10
