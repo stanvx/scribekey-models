@@ -593,7 +593,7 @@ def validate_signatures(
 
 
 def _is_safe_relative_path(path: str) -> bool:
-    if not path or "\0" in path or "\\" in path or path.startswith("/") or path.startswith("./"):
+    if not path or "\0" in path or "\\" in path or path.startswith(("/", "./")):
         return False
     parts = path.split("/")
     for part in parts:
@@ -605,9 +605,7 @@ def _is_safe_relative_path(path: str) -> bool:
 def _is_safe_filename(name: str) -> bool:
     if not name or "\0" in name or "/" in name or "\\" in name:
         return False
-    if name in (".", ".."):
-        return False
-    return True
+    return name not in (".", "..")
 
 
 def validate_model_configuration(
