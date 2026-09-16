@@ -6,13 +6,14 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError
 
 from scribekey_models.guardrails import (
     validate_channel_and_release_pointers,
     validate_identities_and_integrity,
     validate_immutable_source_refs,
+    validate_model_configuration,
     validate_no_executable_payloads,
     validate_redistribution_clearance,
     validate_release_safety,
@@ -308,16 +309,18 @@ def validate() -> list[ValidationIssue]:
             canonical_sources.append((rel_file, SCHEMA_DIR / "release.schema.json"))
 
     for source, schema in canonical_sources:
-        if not source.exists():
-            continue
         try:
-            validator = Draft202012Validator(_load_json(schema))
+            validator = Draft202012Validator(_load_json(schema), format_checker=FormatChecker())
             for error in validator.iter_errors(_load_yaml(source)):
                 location = ".".join(str(part) for part in error.absolute_path)
                 prefix = f"{location}: " if location else ""
                 issues.append(ValidationIssue(str(source.relative_to(ROOT)), prefix + error.message))
         except (OSError, TypeError, ValueError, yaml.YAMLError, SchemaError) as exc:
             issues.append(ValidationIssue(str(source.relative_to(ROOT)), str(exc)))
+
+    # Semantic checks and generation require schema-valid inputs.
+    if issues:
+        return issues
 
     # 2. Guardrails: source refs, identities, safety, pointers, redistribution
     speech_data = load_speech_catalog_data()
@@ -328,6 +331,9 @@ def validate() -> list[ValidationIssue]:
         issues.append(ValidationIssue(g_issue.source, g_issue.message))
 
     for g_issue in validate_identities_and_integrity(speech_data, cleanup_data, diarization_data):
+        issues.append(ValidationIssue(g_issue.source, g_issue.message))
+
+    for g_issue in validate_model_configuration(speech_data, cleanup_data, diarization_data):
         issues.append(ValidationIssue(g_issue.source, g_issue.message))
 
     for g_issue in validate_release_safety(ROOT):

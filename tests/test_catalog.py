@@ -1,6 +1,9 @@
 from pathlib import Path
 
+import pytest
+
 import scribekey_models.catalog as catalog_module
+from scribekey_models import catalog
 from scribekey_models.catalog import (
     GENERATED_DIR,
     export_generated,
@@ -53,6 +56,37 @@ def test_generate_cli_accepts_consumer_output_directory(tmp_path: Path) -> None:
     args = _parser().parse_args(["generate", "--output-dir", str(tmp_path), "--check"])
     assert args.output_dir == tmp_path
     assert args.check is True
+
+
+def test_generation_preserves_optional_model_guidance(monkeypatch) -> None:
+    data = catalog.load_speech_catalog_data()
+    model = data["models"][0]
+    model["description"] = "English dictation processed in segments."
+    model["bestFor"] = "Short English notes."
+    data["models"][1].pop("description", None)
+    data["models"][1].pop("bestFor", None)
+    monkeypatch.setattr(catalog, "load_speech_catalog_data", lambda: data)
+
+    generated = generate_speech_catalog()["models"]
+    assert generated[0]["description"] == model["description"]
+    assert generated[0]["bestFor"] == model["bestFor"]
+    assert "description" not in generated[1]
+    assert "bestFor" not in generated[1]
+
+
+@pytest.mark.parametrize("content", ["models: [", "models: null", None])
+def test_invalid_catalogue_returns_issues_instead_of_crashing(tmp_path, monkeypatch, content) -> None:
+    for filename in ("cleanup.yaml", "diarization.yaml"):
+        (tmp_path / filename).write_bytes((catalog.CATALOG_DIR / filename).read_bytes())
+    if content is not None:
+        (tmp_path / "speech.yaml").write_text(content)
+    monkeypatch.setattr(catalog, "ROOT", tmp_path)
+    monkeypatch.setattr(catalog, "CATALOG_DIR", tmp_path)
+    monkeypatch.setattr(catalog, "CHANNELS_FILE", tmp_path / "channels.yaml")
+    monkeypatch.setattr(catalog, "RELEASES_DIR", tmp_path / "releases")
+    issues = validate()
+    assert issues
+    assert any("speech.yaml" in issue.source for issue in issues)
 
 
 def test_speech_refresh_keeps_legacy_ids_and_adds_new_runtime_shapes() -> None:
@@ -135,3 +169,4 @@ def test_runtime_catalogues_preserve_ordered_fallback_sources(monkeypatch) -> No
     assert generate_diarization_manifest()["models"][0]["downloadUrls"] == [
         "https://mirror.example/diarization.onnx"
     ]
+
