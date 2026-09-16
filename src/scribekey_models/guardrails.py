@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,6 +63,62 @@ PERMISSIVE_LICENSES = {
     "Unlicense",
 }
 MAX_TRACKED_FILE_BYTES = 2 * 1024 * 1024  # 2MB maximum for any metadata/tooling file
+REQUIRED_RUNTIME_FILES: dict[str, tuple[str, ...]] = {
+    "moonshine": (
+        "preprocess.onnx",
+        "encode.int8.onnx",
+        "uncached_decode.int8.onnx",
+        "cached_decode.int8.onnx",
+        "tokens.txt",
+    ),
+    "moonshine_v2": (
+        "encoder_model.ort",
+        "decoder_model_merged.ort",
+        "tokens.txt",
+    ),
+    "nemo_ctc": (
+        "model.onnx",
+        "tokens.txt",
+    ),
+    "nemo_transducer": (
+        "encoder.int8.onnx",
+        "decoder.int8.onnx",
+        "joiner.int8.onnx",
+        "tokens.txt",
+    ),
+    "whisper": (
+        "encoder.int8.onnx",
+        "decoder.int8.onnx",
+        "tokens.txt",
+    ),
+    "canary": (
+        "encoder.int8.onnx",
+        "decoder.int8.onnx",
+        "tokens.txt",
+    ),
+    "omnilingual_ctc": (
+        "model.int8.onnx",
+        "tokens.txt",
+    ),
+    "qwen3_asr": (
+        "conv_frontend.onnx",
+        "encoder.int8.onnx",
+        "decoder.int8.onnx",
+        "tokenizer/merges.txt",
+        "tokenizer/tokenizer_config.json",
+        "tokenizer/vocab.json",
+    ),
+}
+RUNTIME_TO_FAMILY: dict[str, str] = {
+    "moonshine": "MOONSHINE",
+    "moonshine_v2": "MOONSHINE",
+    "nemo_ctc": "PARAKEET",
+    "nemo_transducer": "PARAKEET",
+    "whisper": "DISTIL_WHISPER",
+    "canary": "CANARY",
+    "omnilingual_ctc": "OMNILINGUAL",
+    "qwen3_asr": "QWEN3_ASR",
+}
 
 
 @dataclass(frozen=True)
@@ -533,3 +590,229 @@ def validate_signatures(
             issues.append(GuardrailIssue(str(sig_file.relative_to(ROOT)), f"Signature verification failed for {target_file.name}: {msg}"))
 
     return issues
+
+
+def _is_safe_relative_path(path: str) -> bool:
+    if not path or "\0" in path or "\\" in path or path.startswith("/") or path.startswith("./"):
+        return False
+    parts = path.split("/")
+    for part in parts:
+        if part in ("", ".", ".."):
+            return False
+    return True
+
+
+def _is_safe_filename(name: str) -> bool:
+    if not name or "\0" in name or "/" in name or "\\" in name:
+        return False
+    if name in (".", ".."):
+        return False
+    return True
+
+
+def validate_model_configuration(
+    speech_data: dict[str, Any],
+    cleanup_data: dict[str, Any],
+    diarization_data: dict[str, Any],
+) -> list[GuardrailIssue]:
+    issues: list[GuardrailIssue] = []
+
+    # 1. Speech model configuration
+    for model in speech_data.get("models", []):
+        mid = model.get("id", "unknown")
+        runtime = model.get("sherpaConfig", {}).get("type")
+        family = model.get("family")
+        files = model.get("files", [])
+
+        # Runtime layout required files
+        if runtime in REQUIRED_RUNTIME_FILES:
+            file_names = {f.get("name") for f in files if "name" in f}
+            missing = [req for req in REQUIRED_RUNTIME_FILES[runtime] if req not in file_names]
+            if missing:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/speech.yaml",
+                        f"Speech model '{mid}' with runtime '{runtime}' is missing required files: {', '.join(missing)}",
+                    )
+                )
+
+        # Family alignment
+        if runtime in RUNTIME_TO_FAMILY and family != RUNTIME_TO_FAMILY[runtime]:
+            issues.append(
+                GuardrailIssue(
+                    "catalog/speech.yaml",
+                    f"Speech model '{mid}' family '{family}' does not match expected family '{RUNTIME_TO_FAMILY[runtime]}' for runtime '{runtime}'",
+                )
+            )
+
+        # CACHE_AWARE_ONLINE support
+        if model.get("transcriptionMode") == "CACHE_AWARE_ONLINE" and runtime != "nemo_transducer":
+            issues.append(
+                GuardrailIssue(
+                    "catalog/speech.yaml",
+                    f"Speech model '{mid}' has transcriptionMode CACHE_AWARE_ONLINE which is not supported for runtime '{runtime}'",
+                )
+            )
+
+        # Total size rounding up to diskMb
+        if "diskMb" in model:
+            total_bytes = sum(f.get("sizeBytes", 0) for f in files)
+            expected_disk_mb = math.ceil(total_bytes / (1024 * 1024))
+            if model["diskMb"] != expected_disk_mb:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/speech.yaml",
+                        f"Speech model '{mid}' diskMb {model['diskMb']} does not match expected {expected_disk_mb} MB (totalBytes={total_bytes})",
+                    )
+                )
+
+        # File path safety and duplicate checks
+        seen_names = set()
+        for f in files:
+            name = f.get("name", "")
+            if not _is_safe_relative_path(name):
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/speech.yaml",
+                        f"Speech model '{mid}' has unsafe install path '{name}'",
+                    )
+                )
+            if name in seen_names:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/speech.yaml",
+                        f"Speech model '{mid}': Duplicate install path '{name}'",
+                    )
+                )
+            seen_names.add(name)
+
+        # Provenance matching Hugging Face artifacts
+        provenance = model.get("provenance")
+        if isinstance(provenance, dict):
+            export_repo = provenance.get("exportRepository")
+            export_rev = provenance.get("exportRevision")
+            for f in files:
+                url = f.get("downloadUrl", "")
+                hf_match = re.match(r"^https://huggingface\.co/([^/]+/[^/]+)/resolve/([^/]+)/", url)
+                if hf_match:
+                    url_repo, url_rev = hf_match.group(1), hf_match.group(2)
+                    if (export_repo and url_repo != export_repo) or (export_rev and url_rev != export_rev):
+                        issues.append(
+                            GuardrailIssue(
+                                "catalog/speech.yaml",
+                                f"Speech model '{mid}' file '{f.get('name')}' download URL does not match Hugging Face provenance ({url_repo}@{url_rev} vs {export_repo}@{export_rev})",
+                            )
+                        )
+
+    # 2. Cleanup model configuration
+    cleanup_models: list[dict[str, Any]] = []
+    prod_cleanup = cleanup_data.get("production")
+    if isinstance(prod_cleanup, dict):
+        cleanup_models.append(prod_cleanup)
+    for cand in cleanup_data.get("candidates", []):
+        if isinstance(cand, dict):
+            cleanup_models.append(cand)
+
+    seen_cleanup_ids = set()
+    for cm in cleanup_models:
+        cm_id = cm.get("modelId", "unknown")
+        if cm_id in seen_cleanup_ids:
+            issues.append(
+                GuardrailIssue(
+                    "catalog/cleanup.yaml",
+                    f"Duplicate cleanup model id '{cm_id}'",
+                )
+            )
+        seen_cleanup_ids.add(cm_id)
+
+        bundle_file = cm.get("bundleFileName", "")
+        if not _is_safe_filename(bundle_file):
+            issues.append(
+                GuardrailIssue(
+                    "catalog/cleanup.yaml",
+                    f"Cleanup model '{cm_id}' has unsafe install path '{bundle_file}'",
+                )
+            )
+
+        rev = cm.get("revision")
+        url = cm.get("downloadUrl", "")
+        hf_match = re.match(r"^https://huggingface\.co/([^/]+/[^/]+)/resolve/([^/]+)/", url)
+        if hf_match and rev:
+            url_rev = hf_match.group(2)
+            if url_rev != rev:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/cleanup.yaml",
+                        f"Cleanup model '{cm_id}' download URL does not match Hugging Face revision ({url_rev} vs {rev})",
+                    )
+                )
+
+        ctx_tokens = cm.get("contextTokens")
+        max_out_tokens = cm.get("maxOutputTokens")
+        if ctx_tokens is not None and max_out_tokens is not None and ctx_tokens <= max_out_tokens:
+            issues.append(
+                GuardrailIssue(
+                    "catalog/cleanup.yaml",
+                    f"Cleanup model '{cm_id}': contextTokens must exceed maxOutputTokens ({ctx_tokens} <= {max_out_tokens})",
+                )
+            )
+
+        if cm.get("deterministicDecoding") is True:
+            top_k = cm.get("topK")
+            top_p = cm.get("topP")
+            temp = cm.get("temperature")
+            rep_pen = cm.get("repetitionPenalty")
+            if top_k != 1 or top_p != 1.0 or temp != 0.0 or rep_pen is not None:
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/cleanup.yaml",
+                        f"Cleanup model '{cm_id}': deterministicDecoding requires topK=1, topP=1.0, temperature=0.0, repetitionPenalty=None",
+                    )
+                )
+
+    # 3. Diarization configuration
+    diarization_models = diarization_data.get("models", [])
+    roles = [m.get("role") for m in diarization_models]
+    seg_count = roles.count("SEGMENTATION")
+    emb_count = roles.count("EMBEDDING")
+    if seg_count != 1:
+        issues.append(
+            GuardrailIssue(
+                "catalog/diarization.yaml",
+                f"Diarization catalog must have exactly one SEGMENTATION model, found {seg_count}",
+            )
+        )
+    if emb_count != 1:
+        issues.append(
+            GuardrailIssue(
+                "catalog/diarization.yaml",
+                f"Diarization catalog must have exactly one EMBEDDING model, found {emb_count}",
+            )
+        )
+
+    for dm in diarization_models:
+        file_name = dm.get("fileName", "")
+        if not _is_safe_filename(file_name):
+            issues.append(
+                GuardrailIssue(
+                    "catalog/diarization.yaml",
+                    f"Diarization model has unsafe install path '{file_name}'",
+                )
+            )
+
+        src_repo = dm.get("sourceRepository")
+        src_rev = dm.get("sourceRevision")
+        url = dm.get("downloadUrl", "")
+        hf_match = re.match(r"^https://huggingface\.co/([^/]+/[^/]+)/resolve/([^/]+)/", url)
+        if hf_match:
+            url_repo, url_rev = hf_match.group(1), hf_match.group(2)
+            if (src_repo and url_repo != src_repo) or (src_rev and url_rev != src_rev):
+                issues.append(
+                    GuardrailIssue(
+                        "catalog/diarization.yaml",
+                        f"Diarization model download URL does not match Hugging Face source identity ({url_repo}@{url_rev} vs {src_repo}@{src_rev})",
+                    )
+                )
+
+    return issues
+
